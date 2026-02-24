@@ -1,0 +1,5 @@
+create graph type persondata {
+(personType: Person {name string, address string}),
+(addressType: Address {occ string, city string}),
+(placeType: Place {occ string, zip string})
+}

@@ -1,0 +1,8 @@
+CREATE GRAPH TYPE fraudGraphType {
+( personType : Person { name STRING , birthday DATE }) ,
+( customerType : Person & Customer { name STRING , since DATE }) ,
+( suspiciousType : Suspicious { reason STRING }) ,
+( : customerType )
+-[ friendType : Knows & Likes {time INT} ] ->
+( : customerType )
+}

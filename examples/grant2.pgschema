@@ -1,0 +1,19 @@
+create graph type grantGraphType {
+( sponsorType : Person { name STRING } ),
+( projectType { name STRING, budget INT, duration INT } ),
+( grantType {duration STRING } ),
+( leaderType : Person { name STRING, leader STRING } ),
+( teamType { name STRING } ),
+( : donatorType )
+- [ donatesType : Credit { amount INT } ] ->
+( : projectType ),
+( : projectType )
+- [ offersType { percent INT } ] ->
+( : grantType ),
+( : grantType )
+- [ grantedType ] ->
+( : teamType ),
+( : teamType )
+- [ spendsType : Debit { amount INT, reason STRING } ] ->
+( : grantType ),
+}

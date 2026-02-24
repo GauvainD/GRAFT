@@ -1,0 +1,26 @@
+schemas = {SOI ~ createGraphType ~ (createGraphType)* ~ EOI}
+createGraphType = {^"CREATE GRAPH TYPE" ~ graphType}
+graphType = {typeName? ~ graphTypeElements}
+graphTypeElements = {"{" ~ elementTypes? ~ ","? ~ "}"}
+elementTypes = {elementType ~ ("," ~ elementType)*}
+elementType = {nodeType | edgeType}
+nodeType = {"(" ~ typeName ~ labelPropertySpec ~ ")"}
+edgeType = {endpointType ~ "-" ~ middleType ~ "-" ~ ">" ~ endpointType}
+middleType = {"[" ~ typeName ~ labelPropertySpec ~ "]"}
+endpointType = {"(" ~ ":" ~ typeName ~ ")"}
+labelPropertySpec = {":"? ~ labelSpecSet? ~ propertySpec?}
+labelSpecSet = {labelSpec ~ ( and ~ labelSpec)*}
+labelSpec = {"(" ~ labelSpecSet ~ ")"
+            | "[" ~ labelSpecSet ~ "]"
+            | label
+        }
+propertySpec = {"{" ~ properties? ~ "}"}
+properties = {property ~ ("," ~ property)*}
+property = {key ~ propertyType}
+typeName = @{literal}
+label = @{literal}
+key = @{literal}
+propertyType = @{literal}
+literal = _{(ASCII_ALPHANUMERIC | "_")+}
+and = { "&" }
+WHITESPACE = _{" "|NEWLINE}
