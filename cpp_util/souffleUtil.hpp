@@ -1,5 +1,5 @@
 #pragma once
-#include "/usr/include/souffle/SouffleInterface.h"
+#include <souffle/SouffleInterface.h>
 #include "rust/cxx.h"
 
 namespace souffle

@@ -144,6 +144,7 @@ fn store_property_graph(g: &PropertyGraph, db: &neo4rs::Graph, rt: &tokio::runti
 pub fn output_neo4j(
     receiver: Receiver<LogInfo>,
     first_run: bool,
+    config: crate::neo4j::Neo4jConfig,
 ) -> Result<(Option<f64>, Option<i64>), TransProofError> {
     //TODO remove the unwraps
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -152,7 +153,7 @@ pub fn output_neo4j(
         .build()
         .unwrap();
     let neograph = runtime
-        .block_on(neo4rs::Graph::new("localhost:7687", "", ""))
+        .block_on(neo4rs::Graph::new(&config.uri, &config.user, &config.password))
         .unwrap();
     let mut best_key = None;
     let mut best_sim = None;

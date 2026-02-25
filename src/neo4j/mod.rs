@@ -56,6 +56,20 @@ pub const SOURCE_LABEL: &str = "Source";
 pub const TARGET_LABEL: &str = "Target";
 /// Label for the direct shortcut edge written from source to best target.
 const PATH_LABEL: &str = "Path";
+/// Connection parameters for a Neo4j instance.
+#[derive(Clone, Debug)]
+pub struct Neo4jConfig {
+    pub uri: String,
+    pub user: String,
+    pub password: String,
+}
+
+impl Neo4jConfig {
+    pub fn new(uri: impl Into<String>, user: impl Into<String>, password: impl Into<String>) -> Self {
+        Neo4jConfig { uri: uri.into(), user: user.into(), password: password.into() }
+    }
+}
+
 /// Boolean-valued property set to `true` on the creation timestamp of a meta-node.
 ///
 /// Used by [`get_or_create_metanode`] to detect whether the node was just created
@@ -567,14 +581,14 @@ async fn get_source_graphs_async(
 ///
 /// # Returns
 /// A `Vec` of `(key, graph)` where `key` is the stored hash of the schema.
-pub fn get_source_graphs(label: &str, selector: &SourceSelectorEnum) -> Vec<(i64, PropertyGraph)> {
+pub fn get_source_graphs(label: &str, selector: &SourceSelectorEnum, config: &Neo4jConfig) -> Vec<(i64, PropertyGraph)> {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
         .build()
         .unwrap();
     let neograph = runtime
-        .block_on(neo4rs::Graph::new("localhost:7687", "", ""))
+        .block_on(neo4rs::Graph::new(&config.uri, &config.user, &config.password))
         .unwrap();
     runtime.block_on(get_source_graphs_async(label, &neograph, selector))
 }
@@ -616,14 +630,14 @@ set n:{label};
 ///
 /// Typical use: strip the `"New"` label from schemas that have just been selected
 /// for the next transformation round.
-pub fn remove_label(label: &str, keys: &[i64]) {
+pub fn remove_label(label: &str, keys: &[i64], config: &Neo4jConfig) {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
         .build()
         .unwrap();
     let neograph = runtime
-        .block_on(neo4rs::Graph::new("localhost:7687", "", ""))
+        .block_on(neo4rs::Graph::new(&config.uri, &config.user, &config.password))
         .unwrap();
     runtime.block_on(remove_label_async(label, keys, &neograph))
 }
@@ -632,14 +646,14 @@ pub fn remove_label(label: &str, keys: &[i64]) {
 ///
 /// Typical use: mark a schema node as `"Target"` once it has been identified as
 /// the best result.
-pub fn add_label(label: &str, key: i64) {
+pub fn add_label(label: &str, key: i64, config: &Neo4jConfig) {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
         .build()
         .unwrap();
     let neograph = runtime
-        .block_on(neo4rs::Graph::new("localhost:7687", "", ""))
+        .block_on(neo4rs::Graph::new(&config.uri, &config.user, &config.password))
         .unwrap();
     runtime.block_on(add_label_async(label, key, &neograph))
 }
@@ -701,14 +715,14 @@ create (s)-[:{path} {{{ops}:$ops}}]->(t);
 /// For each shortest path found (traversing `"Meta"` edges), the operations from
 /// every intermediate step are concatenated and stored as a single list on a new
 /// direct `"Path"` edge.  The property name used for the list is `operations_name`.
-pub fn compute_paths(source_label: &str, target_label: &str, operations_name: &str) {
+pub fn compute_paths(source_label: &str, target_label: &str, operations_name: &str, config: &Neo4jConfig) {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
         .build()
         .unwrap();
     let neograph = runtime
-        .block_on(neo4rs::Graph::new("localhost:7687", "", ""))
+        .block_on(neo4rs::Graph::new(&config.uri, &config.user, &config.password))
         .unwrap();
     runtime.block_on(compute_paths_async(
         source_label,
@@ -759,14 +773,14 @@ CREATE (n:TIMINGS {
 ///   `automaton_time` — phase wall-clock totals
 /// - `num_dup` — number of schemas already present when attempted to be inserted
 /// - `num_tot` — total number of schema insertion attempts
-pub fn save_timings() {
+pub fn save_timings(config: &Neo4jConfig) {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
         .build()
         .unwrap();
     let neograph = runtime
-        .block_on(neo4rs::Graph::new("localhost:7687", "", ""))
+        .block_on(neo4rs::Graph::new(&config.uri, &config.user, &config.password))
         .unwrap();
     runtime.block_on(save_timings_async(&neograph));
 }

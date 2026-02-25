@@ -44,6 +44,10 @@ pub mod {name}_ffi {{
     .expect("Could not write to program list file.");
 }
 
+fn souffle_include_dir() -> String {
+    env::var("SOUFFLE_INCLUDE").unwrap_or_else(|_| "/usr/include".to_string())
+}
+
 fn build() {
     let datalog_path = PathBuf::from(DATALOG_DIR)
         .canonicalize()
@@ -100,15 +104,19 @@ fn build() {
     }
     close_program_list_file(program_list_writer);
 
+    let souffle_inc = souffle_include_dir();
+    println!("cargo:rerun-if-env-changed=SOUFFLE_INCLUDE");
+
     cxx_build::bridges(["src/transformation/souffle/souffle_ffi.rs"])
         .file("cpp_util/souffleUtil.hpp")
-        .file("/usr/include/souffle/SouffleInterface.h")
+        .file(format!("{souffle_inc}/souffle/SouffleInterface.h"))
         .files(programs)
         .cpp(true)
         .std("c++17")
         .flag("-fkeep-inline-functions")
         .define("__EMBEDDED_SOUFFLE__", None)
         .include(".")
+        .include(&souffle_inc)
         .compile("transProofSouffle");
 
     println!(

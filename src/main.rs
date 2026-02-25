@@ -8,7 +8,7 @@ use std::sync::mpsc::{channel, sync_channel};
 use std::thread;
 use std::time::Instant;
 use transproof::neo4j;
-use transproof::neo4j::{remove_label, save_timings, SourceSelectorEnum, NEW_LABEL};
+use transproof::neo4j::{remove_label, save_timings, Neo4jConfig, SourceSelectorEnum, NEW_LABEL};
 
 use transproof::compute::*;
 use transproof::constants::{IDEMPOTENCE, MINHASH, NUM_BEST, PATH_WEIGHT, TOTAL_TIME};
@@ -52,6 +52,9 @@ Options:
     --theta <sim>          Minimum similarity to be considered as a solution. [default: 1.0]
     --turns <turns>        Maximum number of iterations without minimal improvement before giving up. [default: 5]
     --improv <improv>      Minimum improvement to reset the number of iterations without improvement. [default: 0.01]
+    --neo4j-uri <uri>      URI of the Neo4j instance. [default: localhost:7687]
+    --neo4j-user <user>    Neo4j username. [default: ]
+    --neo4j-pass <pass>    Neo4j password. [default: ]
     ";
 
 #[derive(Debug, Deserialize, Clone)]
@@ -74,7 +77,10 @@ struct Args {
     flag_idempotent: bool,
     flag_theta: f64,
     flag_turns: usize,
-    flag_improv: f64
+    flag_improv: f64,
+    flag_neo4j_uri: String,
+    flag_neo4j_user: String,
+    flag_neo4j_pass: String,
 }
 
 fn main() -> Result<(), TransProofError> {
@@ -109,6 +115,7 @@ fn main() -> Result<(), TransProofError> {
     let label = args.flag_l;
     let max_turns = args.flag_turns;
     let min_improv = args.flag_improv;
+    let neo4j_config = Neo4jConfig::new(args.flag_neo4j_uri, args.flag_neo4j_user, args.flag_neo4j_pass);
     let strat: SourceSelectorEnum = match &args.flag_strat.as_str() {
         &"random" => SourceSelectorEnum::Random,
         &"naive" => SourceSelectorEnum::Naive,
@@ -196,7 +203,8 @@ fn main() -> Result<(), TransProofError> {
         let builder = thread::Builder::new();
         let whandle;
         if neo4j {
-            whandle = builder.spawn(move || output_neo4j(result_receiver, first_run))?;
+            let config = neo4j_config.clone();
+            whandle = builder.spawn(move || output_neo4j(result_receiver, first_run, config))?;
         } else {
             let outfilename = outfilename.clone();
             whandle =
@@ -220,10 +228,11 @@ fn main() -> Result<(), TransProofError> {
             let mut schemas = neo4j::get_source_graphs(
                 &label.clone().unwrap_or(neo4j::NEW_LABEL.to_string()),
                 &strat,
+                &neo4j_config,
             );
             let ids: Vec<i64> = schemas.iter().map(|x| x.0).collect();
             v = schemas.drain(..).map(|x| x.1.clone()).collect();
-            remove_label(NEW_LABEL, &ids);
+            remove_label(NEW_LABEL, &ids, &neo4j_config);
         } else { //First run reading from input
             let parser = PropertyGraphParser;
             let mut text = String::new();
@@ -280,7 +289,7 @@ fn main() -> Result<(), TransProofError> {
     // Output results or store them in the database
     if let Some((best_sim, best_sig)) = previous_sim.zip(previous_sig) {
         if neo4j {
-            add_label(neo4j::TARGET_LABEL, best_sig);
+            add_label(neo4j::TARGET_LABEL, best_sig, &neo4j_config);
         }
         info!("Final best similarity: {}", best_sim);
         info!("Reached by: {}", best_sig as i64);
@@ -295,8 +304,9 @@ fn main() -> Result<(), TransProofError> {
             neo4j::SOURCE_LABEL,
             neo4j::TARGET_LABEL,
             neo4j::OPERATIONS_PROP,
+            &neo4j_config,
         );
-        save_timings();
+        save_timings(&neo4j_config);
     }
     Ok(())
 }
