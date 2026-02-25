@@ -1,1 +1,137 @@
 # GRAFT
+
+GRAFT computes candidate transformations between property graph schemas. From a
+source schema, a target schema, and a set of Datalog rules describing valid
+transformation operations, it searches for sequences of operations that bring
+the source as close as possible to the target, ranked by Jaccard or MinHash
+similarity.
+
+In single-run mode the results go to stdout or a text file. With `--neo4j`,
+results are stored in a Neo4j database and GRAFT loops, repeatedly picking the
+most promising schemas to transform further, until similarity converges or a
+turn limit is hit.
+
+## Requirements
+
+- [Souffle](https://souffle-lang.github.io/), compiles the Datalog
+transformation rules to C++
+- Rust toolchain
+- Neo4j Community Edition >= 5.24.0 (optional, only needed for `--neo4j` mode)
+
+## Installation
+
+Put your transformation rules as `.dl` files in the `datalog/` directory, then build:
+
+```sh
+BUILD_ENABLED=1 cargo build --release
+```
+
+This compiles the Datalog programs via Souffle and links the resulting C++ into
+the binary. It can take a few minutes on the first run.
+
+### Souffle header location
+
+GRAFT expects Souffle headers at `/usr/include/souffle/` by default. If your
+installation lives elsewhere, point to the parent directory:
+
+```sh
+SOUFFLE_INCLUDE=/opt/souffle/include BUILD_ENABLED=1 cargo build --release
+```
+
+## Running
+
+The `<program>` argument is the name of your Datalog file without the `.dl` extension.
+
+```
+Transrust is a tool to compute the results of different transformations on a given set of graphs.
+These graphs have to be given in graph6 format from the input (one signature per line) and the
+result is outputed in csv format.
+
+Usage:
+    transrust [options] <program>
+    transrust (-h | --help)
+
+Options:
+    -h, --help             Show this message.
+    -v, --verbose          Shows more information.
+    -i, --input <input>    File containing the input schemas. Uses the standard input if '-'.
+                           [default: -]
+    -o, --output <output>  File where to write the result. Uses the standard output if '-'.
+                           [default: -]
+    -s, --buffer <buffer>  Size of the buffer [default: 2000000000]
+    -t <threads>           Number of threads to be used for computation. A value of 0 means using
+                           as many threads cores on the machine. [default: 0]
+    -c <channel>           Size of the buffer to use for each threads (in number of messages). If
+                           the size is 0, the buffer is unlimited. Use this if you have memory
+                           issues even while setting a smaller output buffer and batch size.
+                           [default: 0]
+    -a, --append           Does not overwrite output file but appends results instead.
+    --neo4j                Writes the output in a Neo4j database and proceed to multiple loops. Incompatible with -o.
+    -l, --label <label>    Reads graphs from metanodes in Neo4j database having the given label. Incompatible with -i.
+    --target <target>      File containing the target schema.
+    -p, --prune <prune>    Number of best results to keep. [default: 6]
+    --strat <strategy>     Strategy to use for the computation. Available strategies are: naive, random, weighted_distance and greedy. [default: greedy]
+    -w, --weight <weight>  Weight to give to the distance in the weighted distance strategy. Must be between 0 and 1. [default: 0.5]
+    --minshash <sample>    Use minhash similarity with the given sample size instead of default jaccard index. [default: 200]
+    --idempotent           Operations are idempotent
+    --theta <sim>          Minimum similarity to be considered as a solution. [default: 1.0]
+    --turns <turns>        Maximum number of iterations without minimal improvement before giving up. [default: 5]
+    --improv <improv>      Minimum improvement to reset the number of iterations without improvement. [default: 0.01]
+    --neo4j-uri <uri>      URI of the Neo4j instance. [default: localhost:7687]
+    --neo4j-user <user>    Neo4j username. [default: ]
+    --neo4j-pass <pass>    Neo4j password. [default: ]
+```
+
+### Single-run mode
+
+Without `--neo4j`, one round of transformations is performed and results are
+written to stdout or a file:
+
+```sh
+transrust -i input.pgschema --target target.pgschema -p 6 myprogram
+```
+
+### Neo4j mode
+
+With `--neo4j`, each round's results are written to Neo4j. GRAFT then loops,
+selecting schemas with the chosen strategy (`--strat`) and transforming them
+again, until the similarity threshold (`--theta`) is reached or `--turns` rounds
+pass without enough improvement.
+
+```sh
+transrust --neo4j --target target.pgschema --strat greedy \
+          --neo4j-uri bolt://localhost:7687 myprogram
+```
+
+Start with a clean database before each run — leftover data from a previous run
+or unrelated schemas will interfere with the search.
+
+### PGSchema format
+
+Input schemas are expected to be using the PGSchema format. See
+`./src/parsing/PropertyGraph.pest` for reference. In single-run mode, schemas
+are outputed in pairs of source/result, separated by `===`. The schemas are in
+PGSchema format.
+
+## Retrieving results from Neo4j
+
+Schemas are stored as property graphs. Node/edge type names are kept in a
+`_name` property. Since Neo4j requires every relationship to have a label,
+unlabelled edges are given the `Internal` label; otherwise the label is a `:`
+-joined concatenation of the schema's labels.
+
+Each schema node is connected to a **meta-node** (label `Meta`) via an `Inner`
+edge. The meta-node holds a `key` property — a content hash used to detect
+duplicates — and similarity/distance scores. Edges between meta-nodes (label
+`Meta`) represent transformation steps and carry an `operations` list.
+
+At the end of a run:
+
+- The meta-node closest to the target receives the `Target` label.
+- A `Path` edge is written from each source meta-node to the target, with the
+full concatenated `operations` list.
+- A `TIMINGS` node is inserted with wall-clock measurements for each phase.
+
+## References
+
+Initial development came from TransProof: https://github.com/umons-dept-comp-sci/PhoegTransRust
