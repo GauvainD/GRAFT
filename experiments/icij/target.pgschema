@@ -1,0 +1,50 @@
+CREATE GRAPH TYPE target {
+( Address:{ country_codes String , valid_until String , orig_addr String , country String , sourceID String , address String , country_code String } ),
+( Intermediary:{ valid_until String , address String , name String , sourceID String , status String , country_codes String , countries String , country_code String } ),
+( Entity:{ jurisdiction_desc String , address String , country_code String , name String , orig_name String , inc_date String , jurisdiction String , country_codes String , sourceID String , inact_date String } ),
+( Officer:{ name String , sourceID String , status String } ),
+( Country:{ name String } ),
+(:Officer)
+  -[registered_address:{ } ]->
+(:Address),
+(:Intermediary)
+  -[registered_address:{ } ]->
+(:Address),
+(:Intermediary)
+  -[intermediary_of:{ } ]->
+(:Entity),
+(:Officer)
+  -[similar:{ } ]->
+(:Officer),
+(:Address)
+  -[same_as:{ } ]->
+(:Address),
+( T_Address:{ orig_addr String , source String , valid_until String , address String } ),
+( T_Intermediary:{ status String , valid_until String , source String , name String } ),
+( T_Officer:{ source String , name String , status String } ),
+( T_Entity:{ orig_name String , source String , name String , inc_date String , inact_date String } ),
+( T_Country:{ name String } ),
+( T_Jurisdiction:{ juris String } ),
+(:T_Address)
+  -[T_LOCATED:{ } ]->
+(:T_Country),
+(:T_Intermediary)
+  -[T_REG_ADDRESS:{ } ]->
+(:T_Address),
+(:T_Officer)
+  -[T_SIMILAR:{ } ]->
+(:T_Officer),
+(:T_Address)
+  -[T_SAME_AS:{ } ]->
+(:T_Address),
+(:T_Officer)
+  -[T_REGISTERED_ADDRESS:{ } ]->
+(:T_Address),
+(:T_Entity)
+  -[T_IN_JURIS:{ } ]->
+(:T_Jurisdiction),
+(:T_Jurisdiction)
+  -[T_RELATED:{ } ]->
+(:T_Country),
+}
+

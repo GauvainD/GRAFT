@@ -1,0 +1,24 @@
+create graph type FlightHotel {
+    (flightType: Flight {
+        fid INTEGER,
+        src STRING,
+        dest STRING
+    }),
+    (hotelType: Hotel {
+        flid INTEGER,
+        hid STRING
+    }),
+    (locationType: Location {
+        name STRING
+    }),
+    (travelType: Travel {
+        from STRING,
+        to STRING
+    }),
+    (:locationType)-[location_travel: FLIGHTS_TO]->(:travelType),
+    (:travelType)-[travel_location: FLIGHTS_TO]->(:locationType),
+    (hotel2Type: Hotel2 {
+        name STRING
+    }),
+    (:hotel2Type)-[has_hotel: HAS_HOTEL]->(:travelType),
+}

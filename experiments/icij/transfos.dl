@@ -1,0 +1,231 @@
+.include "./definitions.dl"
+//.include "./input.dl"
+
+//TODO: use optional
+
+// Generic
+
+ConcreteOperation($AddVertex(vert)):-
+    TargetVertex(vert).
+
+ConcreteOperation($AddVertexProperty(vert, prop, type)):-
+    TargetVertexProperty(vert, prop, type).
+
+.decl vert_prop(vert: symbol, prop: symbol)
+
+vert_prop(vert, prop):-
+    ConcreteOperation($AddVertex(vert)),
+    ConcreteOperation($AddVertexProperty(vert, prop, _)).
+
+ConcreteOperation($AddEdge(edge, src, dst)):-
+    TargetEdge(edge, src, dst).
+
+ConcreteOperation($AddEdgeProperty(edge, prop, type)):-
+    TargetEdge(edge, _, _),
+    TargetEdgeProperty(edge, prop, type).
+
+.decl edge_prop(edge: symbol, prop: symbol)
+
+edge_prop(edge, prop):-
+    ConcreteOperation($AddEdge(edge, _, _)),
+    ConcreteOperation($AddEdgeProperty(edge, prop, _)).
+
+.decl chain1(vert1: symbol, edge1: symbol, vert2: symbol)
+
+chain1(vert1, edge1, vert2):-
+    ConcreteOperation($AddVertex(vert1)),
+    ConcreteOperation($AddVertex(vert2)),
+    ConcreteOperation($AddEdge(edge1, vert1, vert2)),
+    vert1 != vert2.
+
+.decl chain2(vert1: symbol, edge1: symbol, vert2: symbol, edge2: symbol, vert3: symbol)
+
+chain2(vert1, edge1, vert2, edge2, vert3):-
+    chain1(vert1, edge1, vert2),
+    chain1(vert2, edge2, vert3),
+    vert1 != vert2,
+    vert1 != vert3,
+    vert2 != vert3,
+    edge1 != edge2.
+
+.decl loop(vert: symbol, edge: symbol)
+
+loop(vert, edge):-
+    ConcreteOperation($AddVertex(vert)),
+    ConcreteOperation($AddEdge(edge, vert, vert)).
+
+// R1, R3
+
+NextId("R1;3",$AddVertex(vert1), $AddVertex(vert1), $AddVertexProperty(vert1, prop, type)):-
+    chain1(vert1, _, _),
+    ConcreteOperation($AddVertexProperty(vert1, prop, type)),
+    vert_prop(vert1, prop).
+
+NextId("R1;3",$AddVertex(vert1), $AddVertexProperty(vert1, prop, type), $AddVertex(vert2)):-
+    chain1(vert1, _, vert2),
+    ConcreteOperation($AddVertexProperty(vert1, prop, type)),
+    vert_prop(vert1, prop).
+
+NextId("R1;3",$AddVertex(vert1), $AddVertex(vert2), $AddVertexProperty(vert2, prop, type)):-
+    chain1(vert1, _, vert2),
+    ConcreteOperation($AddVertexProperty(vert2, prop, type)),
+    vert_prop(vert2, prop).
+
+NextId("R1;3",$AddVertex(vert1), $AddVertexProperty(vert2, prop, type), $AddEdge(edge1, vert1, vert2)):-
+    chain1(vert1, edge1, vert2),
+    ConcreteOperation($AddVertexProperty(vert2, prop, type)),
+    vert_prop(vert2, prop).
+
+// R2, R4 (subsets of R1)
+NextId("R2;4",$AddVertex(vert1), $AddVertex(vert1), $AddVertexProperty(vert1, prop, type)):-
+    ConcreteOperation($AddVertexProperty(vert1, prop, type)),
+    vert_prop(vert1, prop).
+
+// R5
+
+NextId("R5",$AddVertex(vert1), $AddVertex(vert1), $AddVertex(vert2)):-
+    chain1(vert1, _, vert2).
+
+NextId("R5",$AddVertex(vert1), $AddVertex(vert2), $AddEdge(edge1, vert1, vert2)):-
+    chain1(vert1, edge1, vert2).
+
+// R6
+
+NextId("R6",$AddVertex(vert1), $AddVertex(vert1), $AddVertex(vert2)):-
+    chain2(vert1, _, vert2, _, _).
+
+NextId("R6",$AddVertex(vert1), $AddVertex(vert2), $AddVertexProperty(vert2, prop, type)):-
+    chain2(vert1, _, vert2, _, _),
+    ConcreteOperation($AddVertexProperty(vert2, prop, type)),
+    vert_prop(vert2, prop).
+
+NextId("R6",$AddVertex(vert1), $AddVertexProperty(vert2, prop, type), $AddVertex(vert3)):-
+    chain2(vert1, _, vert2, _, vert3),
+    ConcreteOperation($AddVertexProperty(vert2, prop, type)),
+    vert_prop(vert2, prop).
+
+NextId("R6",$AddVertex(vert1), $AddVertex(vert3), $AddEdge(edge1, vert1, vert2)):-
+    chain2(vert1, edge1, vert2, _, vert3).
+
+NextId("R6",$AddVertex(vert1), $AddEdge(edge1, vert1, vert2), $AddEdge(edge2, vert2, vert3)):-
+    chain2(vert1, edge1, vert2, edge2, vert3).
+
+// R7, R8
+
+NextId("R7;8",$AddVertex(vert1), $AddVertex(vert1), $AddVertex(vert2)):-
+    chain1(vert1, _, vert2).
+
+NextId("R7;8",$AddVertex(vert1), $AddVertex(vert2), $AddVertexProperty(vert2, prop, type)):-
+    chain1(vert1, _, vert2),
+    ConcreteOperation($AddVertexProperty(vert2, prop, type)),
+    vert_prop(vert2, prop).
+
+NextId("R7;8",$AddVertex(vert1), $AddVertexProperty(vert2, prop, type), $AddEdge(edge1, vert1, vert2)):-
+    ConcreteOperation($AddVertexProperty(vert2, prop, type)),
+    chain1(vert1, edge1, vert2).
+
+
+// R9
+
+NextId("R9",$AddVertex(vert1), $AddVertex(vert1), $AddVertex(vert2)):-
+    chain2(vert1, _, vert2, _, _).
+
+NextId("R9",$AddVertex(vert1), $AddVertex(vert2), $AddVertexProperty(vert2, prop, type)):-
+    chain2(vert1, _, vert2, _, _),
+    ConcreteOperation($AddVertexProperty(vert2, prop, type)),
+    vert_prop(vert2, prop).
+
+NextId("R9",$AddVertex(vert1), $AddVertexProperty(vert2, prop, type), $AddVertex(vert3)):-
+    chain2(vert1, _, vert2, _, vert3),
+    ConcreteOperation($AddVertexProperty(vert2, prop, type)),
+    vert_prop(vert2, prop).
+
+NextId("R9",$AddVertex(vert1), $AddVertex(vert3), $AddEdge(edge1, vert1, vert2)):-
+    chain2(vert1, edge1, vert2, _, vert3).
+
+NextId("R9",$AddVertex(vert1), $AddEdge(edge1, vert1, vert2), $AddEdge(edge2, vert2, vert3)):-
+    chain2(vert1, edge1, vert2, edge2, vert3).
+
+NextId("R9",$AddVertex(vert1), $AddEdge(edge2, vert2, vert3), $AddVertexProperty(vert3, prop, type)):-
+    chain2(vert1, _, vert2, edge2, vert3),
+    ConcreteOperation($AddVertexProperty(vert3, prop, type)),
+    vert_prop(vert3, prop).
+
+// R10, R11, R12, R13
+
+NextId("R10-13",$AddVertex(vert1), $AddVertex(vert1), $AddVertexProperty(vert1, prop, type)):-
+    ConcreteOperation($AddVertexProperty(vert1, prop, type)),
+    vert_prop(vert1, prop).
+
+NextId("R10-13",$AddVertex(vert1), $AddVertexProperty(vert1, prop1, type), $AddVertexProperty(vert1, prop2, type)):-
+    ConcreteOperation($AddVertexProperty(vert1, prop1, type)),
+    vert_prop(vert1, prop),
+    ConcreteOperation($AddVertexProperty(vert1, prop2, type)),
+    vert_prop(vert1, prop),
+    prop1 != prop2.
+
+// R14
+
+NextId("R14",$AddVertex(vert), $AddVertex(vert), $AddEdge(edge, vert, vert)):-
+    loop(vert, edge).
+
+NextId("R14",$AddVertex(vert), $AddEdge(edge, vert, vert), $AddEdgeProperty(edge, prop, type)):-
+    loop(vert, edge),
+    ConcreteOperation($AddEdgeProperty(edge, prop, type)),
+    edge_prop(edge, prop).
+
+// R15 (we could have a chain or a loop)
+
+NextId("R15*1",$AddEdge(edge, vert, vert), $AddEdge(edge, vert, vert), $AddEdgeProperty(edge, prop, type)):-
+    loop(vert, edge),
+    ConcreteOperation($AddEdgeProperty(edge, prop, type)),
+    edge_prop(edge, prop).
+
+NextId("R15*1",$AddEdge(edge, vert1, vert2), $AddEdge(edge, vert1, vert2), $AddEdgeProperty(edge, prop, type)):-
+    chain1(vert1, edge, vert2),
+    ConcreteOperation($AddEdgeProperty(edge, prop, type)),
+    edge_prop(edge, prop).
+
+// R15'
+//
+// If an edge does not have a property, this rule won't be applied because of
+// its definition. This might be seen as incohrent with our model since there
+// would normally be a Start($AddEdge(edge, vert, vert)) if Start and Next were
+// not merged like here.
+
+NextId("R15*2",$AddEdge(edge, vert, vert), $AddEdge(edge, vert, vert), $AddEdge(edge, vert, vert)):-
+    loop(vert, edge).
+
+NextId("R15*2",$AddEdge(edge, vert1, vert2), $AddEdge(edge, vert1, vert2), $AddEdge(edge, vert1, vert2)):-
+    chain1(vert1, edge, vert2).
+
+// R16, R17
+
+NextId("R16;17",$AddVertex(vert), $AddVertex(vert), $AddEdge(edge, vert, vert)):-
+    loop(vert, edge).
+
+// R18
+
+NextId("R18",$AddVertex(vert1), $AddVertex(vert1), $AddVertex(vert2)):-
+    chain2(vert1, _, vert2, _, _).
+
+NextId("R18",$AddVertex(vert1), $AddVertex(vert2), $AddVertexProperty(vert2, prop, type)):-
+    chain2(vert1, _, vert2, _, _),
+    ConcreteOperation($AddVertexProperty(vert2, prop, type)),
+    vert_prop(vert2, prop).
+
+NextId("R18",$AddVertex(vert1), $AddVertexProperty(vert2, prop, type), $AddEdge(edge1, vert1, vert2)):-
+    chain2(vert1, edge1, vert2, _, _),
+    ConcreteOperation($AddVertexProperty(vert2, prop, type)),
+    vert_prop(vert2, prop).
+
+NextId("R18",$AddVertex(vert1), $AddEdge(edge1, vert1, vert2), $AddVertex(vert3)):-
+    chain2(vert1, edge1, vert2, _, vert3).
+
+NextId("R18",$AddVertex(vert1), $AddVertex(vert3), $AddEdge(edge2, vert2, vert3)):-
+    chain2(vert1, edge1, vert2, edge2, vert3).
+
+NextId("R18",$AddVertex(vert1), $AddEdge(edge2, vert2, vert3), $AddVertexProperty(vert3, prop, type)):-
+    chain2(vert1, _, vert2, edge2, vert3),
+    ConcreteOperation($AddVertexProperty(vert3, prop, type)),
+    vert_prop(vert3, prop).

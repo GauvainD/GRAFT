@@ -1,0 +1,37 @@
+.include "definitions.dl"
+//.include "data.dl"
+
+ConcreteOperation($AddVertex(v)):-
+	!Vertex(v),
+	TargetVertex(v).
+
+ConcreteOperation($AddVertexLabel(v,l)):-
+	!VertexHasLabel(v,l),
+	TargetVertexHasLabel(v,l).
+
+ConcreteOperation($AddVertexProperty(v,p,t)):-
+	!VertexProperty(v,p,t),
+	TargetVertexProperty(v,p,t).
+
+ConcreteOperation($AddEdge(e,f,t)):-
+	!Edge(e,f,t),
+	TargetEdge(e,f,t).
+
+ConcreteOperation($AddEdgeLabel(e,l)):-
+	!EdgeHasLabel(e, l),
+	TargetEdgeHasLabel(e, l).
+
+Next($AddVertex(v), $AddVertex(v), $AddVertex(v)):-
+	ConcreteOperation($AddVertex(v)).
+
+Next($AddVertexLabel(v, l), $AddVertexLabel(v, l), $AddVertexLabel(v, l)):-
+	ConcreteOperation($AddVertexLabel(v, l)).
+
+Next($AddVertexProperty(v, p, t), $AddVertexProperty(v, p, t), $AddVertexProperty(v, p, t)):-
+	ConcreteOperation($AddVertexProperty(v, p, t)).
+
+Next($AddEdge(e, f, t), $AddEdge(e, f, t), $AddEdge(e, f, t)):-
+	ConcreteOperation($AddEdge(e, f, t)).
+
+Next($AddEdgeLabel(e, l), $AddEdgeLabel(e, l), $AddEdgeLabel(e, l)):-
+	ConcreteOperation($AddEdgeLabel(e, l)).

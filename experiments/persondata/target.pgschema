@@ -1,0 +1,10 @@
+create graph type persondata {
+(personType: Person {name string, address string}),
+(addressType: Address {occ string, city string}),
+(placeType: Place {occ string, zip string}),
+(x: Person2 {address string}),
+(y: City {city string}),
+(z: Zip {zip string}),
+(:x) -[x_y: HAS_ADDRESS]->(:y),
+(:y) -[y_z: HAS_PLACE]->(:z)
+}

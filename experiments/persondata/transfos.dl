@@ -1,0 +1,38 @@
+.include "definitions.dl"
+//.include "test-data.dl"
+
+ConcreteOperation($AddVertex(x)):-
+    TargetVertex(x),
+    !Vertex(x).
+
+ConcreteOperation($AddVertexLabel(v, x)):-
+    ConcreteOperation($AddVertex(v)),
+    TargetVertexLabel(x),
+    !VertexLabel(x).
+
+ConcreteOperation($AddVertexProperty(vertex, name, value)):-
+    ConcreteOperation($AddVertex(vertex)),
+    VertexProperty(_, name, value).
+
+ConcreteOperation($AddEdge(x, f, t)):-
+    TargetEdge(x, f, t),
+    Vertex(f),
+    Vertex(t),
+    !Edge(x, _, _).
+
+ConcreteOperation($AddEdgeLabel(e, x)):-
+    TargetEdgeLabel(x),
+    ConcreteOperation($AddEdge(e, _, _)).
+
+Next($AddVertex(vertex), $AddVertex(vertex), $AddVertexLabel(vertex, label)):-
+    ConcreteOperation($AddVertex(vertex)),
+    ConcreteOperation($AddVertexLabel(vertex, label)).
+
+Next(root, $AddVertexLabel(vertex, label), $AddVertexProperty(vertex, property, type)):-
+    Next(root, _, $AddVertexLabel(vertex, label)),
+    ConcreteOperation($AddVertexLabel(vertex, label)),
+    ConcreteOperation($AddVertexProperty(vertex, property, type)).
+
+Next($AddEdge(edge, from, to), $AddEdge(edge, from, to), $AddEdgeLabel(edge, label)):-
+    ConcreteOperation($AddEdge(edge, from, to)),
+    ConcreteOperation($AddEdgeLabel(edge, label)).

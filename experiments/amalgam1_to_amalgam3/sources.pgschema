@@ -1,0 +1,133 @@
+create graph type iBenchAmalgam1ToAmalgam3 {
+    (InProceedingsType: InProceedings {
+        inprocid  INTEGER, 
+        title  STRING, 
+        bktitle  STRING, 
+        year  INTEGER, 
+        month  INTEGER, 
+        pages  INTEGER, 
+        vol  INTEGER, 
+        num  INTEGER, 
+        loc  INTEGER, 
+        class  INTEGER, 
+        note  INTEGER, 
+        annote INTEGER
+    }),
+    (ArticleType:Article {
+        articleid  INTEGER, 
+        title  STRING, 
+        journal  STRING, 
+        year  INTEGER, 
+        month  INTEGER, 
+        pages  INTEGER, 
+        vol  INTEGER, 
+        num  INTEGER, 
+        loc  INTEGER, 
+        class  INTEGER, 
+        note  INTEGER, 
+        annote INTEGER
+    }),
+    (TechReportType:TechReport {
+        techid  INTEGER, 
+        title  STRING, 
+        inst  STRING, 
+        year  INTEGER, 
+        month  INTEGER, 
+        pages  INTEGER, 
+        vol  INTEGER, 
+        num  INTEGER, 
+        loc  INTEGER, 
+        class  INTEGER, 
+        note  INTEGER, 
+        annote INTEGER
+    }),
+    (BookType:Book {
+        bookid  INTEGER, 
+        title  STRING, 
+        publisher  STRING, 
+        year  INTEGER, 
+        month  INTEGER, 
+        pages  INTEGER, 
+        vol  INTEGER, 
+        num  INTEGER, 
+        loc  INTEGER, 
+        class  INTEGER, 
+        note  INTEGER, 
+        annote INTEGER
+    }),
+    (InCollectionType:InCollection {
+        colid  INTEGER, 
+        title  STRING, 
+        bktitle  STRING, 
+        year  INTEGER, 
+        month  INTEGER, 
+        pages  INTEGER, 
+        vol  INTEGER, 
+        num  INTEGER, 
+        loc  INTEGER, 
+        class  INTEGER, 
+        note  INTEGER, 
+        annote INTEGER
+    }),
+    (MiscType:Misc {
+        miscid  INTEGER, 
+        title  STRING, 
+        howpub  STRING, 
+        confloc  INTEGER, 
+        year  INTEGER, 
+        month  INTEGER, 
+        pages  INTEGER, 
+        vol  INTEGER, 
+        num  INTEGER, 
+        loc  INTEGER, 
+        class  INTEGER, 
+        note  INTEGER, 
+        annote INTEGER
+    }),
+    (ManualType:Manual {
+        manid  INTEGER, 
+        title  STRING, 
+        org  STRING, 
+        year  INTEGER, 
+        month  INTEGER, 
+        pages  INTEGER, 
+        vol  INTEGER, 
+        num  INTEGER, 
+        loc  INTEGER, 
+        class  INTEGER, 
+        note  INTEGER, 
+        annote INTEGER
+    }),
+    (AuthorType:Author {
+        authid  INTEGER, 
+        name STRING
+    }),
+    (InProcPublishedType:InProcPublished {
+        inproc  INTEGER, 
+        auth INTEGER
+    }),
+    (ArticlePublishedType:ArticlePublished {
+        article  INTEGER, 
+        auth INTEGER
+    }),
+    (TechPublishedType:TechPublished {
+        tech  INTEGER, 
+        auth INTEGER
+    }),
+    (BookPublishedType:BookPublished {
+        book  INTEGER, 
+        auth INTEGER
+    }),
+    (InCollPublishedType:InCollPublished {
+        col  INTEGER, 
+        auth INTEGER
+    }),
+    (MiscPublishedType:MiscPublished {
+        misc  INTEGER, 
+        auth INTEGER
+    }),
+    (ManualPublishedType:ManualPublished {
+        manual  INTEGER, 
+        auth INTEGER
+    }),
+}

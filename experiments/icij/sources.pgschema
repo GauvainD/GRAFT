@@ -1,0 +1,23 @@
+CREATE GRAPH TYPE target {
+( Address:{ country_codes String , valid_until String , orig_addr String , country String , sourceID String , address String , country_code String } ),
+( Intermediary:{ valid_until String , address String , name String , sourceID String , status String , country_codes String , countries String , country_code String } ),
+( Entity:{ jurisdiction_desc String , address String , country_code String , name String , orig_name String , inc_date String , jurisdiction String , country_codes String , sourceID String , inact_date String } ),
+( Officer:{ name String , sourceID String , status String } ),
+( Country:{ name String } ),
+(:Officer)
+  -[registered_address:{ } ]->
+(:Address),
+(:Intermediary)
+  -[registered_address:{ } ]->
+(:Address),
+(:Intermediary)
+  -[intermediary_of:{ } ]->
+(:Entity),
+(:Officer)
+  -[similar:{ } ]->
+(:Officer),
+(:Address)
+  -[same_as:{ } ]->
+(:Address),
+}
+

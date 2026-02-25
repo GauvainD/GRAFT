@@ -1,0 +1,85 @@
+create graph type iBenchDBLPToAmalgam1 {
+    (inProceedingsType: DInProceedings {
+        pid INTEGER, 
+        title STRING,
+        pages INTEGER,
+        booktitle STRING,
+        url URL,
+        cdrom BOOLEAN,
+        month INTEGER,
+        year INTEGER
+    }),
+    (articleType: DArticle {
+        pid INTEGER, 
+        title STRING, 
+        pages INTEGER, 
+        cdrom BOOLEAN, 
+        month INTEGER, 
+        year INTEGER, 
+        volume INTEGER, 
+        journal STRING, 
+        number INTEGER, 
+        url STRING
+    }),
+    (authorType: PubAuthors {
+        pid INTEGER,
+        author STRING
+    }),
+    (bookType: DBook {
+        pid INTEGER,
+        editor STRING,
+        title STRING,
+        publisher STRING,
+        year INTEGER,
+        isbn STRING,
+        cdrom BOOLEAN,
+        citel STRING,
+        url STRING
+    }),
+    (masterThesisType: MasterThesis {
+        author STRING,
+        title STRING,
+        year INTEGER,
+        school STRING
+    }),
+    (phdThesisType: PhDThesis {
+        author STRING,
+        title STRING,
+        year INTEGER,
+        series INTEGER,
+        number INTEGER,
+        month INTEGER,
+        school STRING,
+        publisher STRING,
+        isbn STRING
+    }),
+    (onlineType: WWW {
+        pid INTEGER,
+        title STRING,
+        year INTEGER,
+        url STRING
+    }),
+    (x: TArticle {
+        articleid STRING,
+        title STRING,
+        vol INTEGER,
+        num INTEGER,
+        pages INTEGER,
+        month INTEGER,
+        year INTEGER,
+        refkey STRING,
+        note STRING,
+        remarks STRING,
+        refs STRING,
+        xxxrefs STRING,
+        fullxxxrefs STRING,
+        oldkey STRING,
+        abstract STRING,
+        preliminary STRING
+    }),
+    (Auth: {
+        authorid STRING,
+        name STRING
+    }),
+    (:x)-[e:ARTICLE_PUBLISHED]->(:Auth),
+}
