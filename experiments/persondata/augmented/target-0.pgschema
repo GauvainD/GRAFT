@@ -1,0 +1,14 @@
+CREATE GRAPH TYPE {
+( personType:Person { address string , name string } ),
+( addressType:Address { occ string , city string } ),
+( placeType:Place { zip string , occ string } ),
+( x:Person2 { address string } ),
+( y:City { city string } ),
+( z:Zip { zip string } ),
+(:x)
+  -[x_y:HAS_ADDRESS { } ]->
+(:y),
+(:y)
+  -[y_z:HAS_PLACE { } ]->
+(:z),
+}

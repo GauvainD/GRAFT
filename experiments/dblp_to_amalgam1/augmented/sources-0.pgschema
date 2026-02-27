@@ -1,0 +1,9 @@
+CREATE GRAPH TYPE {
+( inProceedingsType:DInProceedings { pid INTEGER , title STRING , month INTEGER , year INTEGER , pages INTEGER , cdrom BOOLEAN , url URL , booktitle STRING } ),
+( articleType:DArticle { journal STRING , title STRING , year INTEGER , url STRING , pages INTEGER , month INTEGER , cdrom BOOLEAN , volume INTEGER , pid INTEGER , number INTEGER } ),
+( authorType:PubAuthors { author STRING , pid INTEGER } ),
+( bookType:DBook { isbn STRING , editor STRING , publisher STRING , year INTEGER , pid INTEGER , citel STRING , cdrom BOOLEAN , url STRING , title STRING } ),
+( masterThesisType:MasterThesis { author STRING , year INTEGER , title STRING , school STRING } ),
+( phdThesisType:PhDThesis { year INTEGER , series INTEGER , isbn STRING , publisher STRING , title STRING , number INTEGER , school STRING , author STRING , month INTEGER } ),
+( onlineType:WWW { title STRING , pid INTEGER , url STRING , year INTEGER } ),
+}

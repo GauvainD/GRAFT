@@ -1,0 +1,15 @@
+CREATE GRAPH TYPE {
+( personType:Person { address string , name string } ),
+( addressType:Address { occ string , city string } ),
+( placeType:Place { occ string , zip string } ),
+( BpqrKjyalo:jRQXHwEOgX { ceXtOpLrTo string , rHIlDNHmkO string } ),
+( kfCRazdGnc:qcOMHWWgoc { zBKSnIvutu string , odXVzXFJAP string } ),
+( kuzROjQrwy:JWrvqDCpcd { GUZisniiPc string , RVsGRHZutO string } ),
+( wBNjCgTgFA:luNZwagbom { mNNNErkvYu string , rFsIJGduMv string } ),
+( atvZtgKpxq:SUlkFLLPmk { scSaayjKlN string , ICyXRGffmG string } ),
+( kwQOkXoCPK:LqzRMpiecm { dlVHNInURD string , YTNUiXSBQF string } ),
+( doDqWiToeU:QMBTcdCxuV { VnVfAtHQoa string , uKcMkfBHfC string } ),
+( mmidPiDBuR:SJkIcaDCKh { lBPUGvIUOC string , sBcXtfVhEq string } ),
+( aNWwgrcQKE:BAaFVPeiNO { zAleAwHyxQ string , LGdzivubwV string } ),
+( uuyvhHmZri:GKppiZRlZz { PGsICOZcaZ string , gocqMlPNYE string } ),
+}

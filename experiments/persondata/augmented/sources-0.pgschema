@@ -1,0 +1,5 @@
+CREATE GRAPH TYPE {
+( personType:Person { address string , name string } ),
+( addressType:Address { occ string , city string } ),
+( placeType:Place { occ string , zip string } ),
+}

@@ -1,0 +1,4 @@
+CREATE GRAPH TYPE {
+( flightType:Flight { fid INTEGER , dest STRING , src STRING } ),
+( hotelType:Hotel { hid STRING , flid INTEGER } ),
+}

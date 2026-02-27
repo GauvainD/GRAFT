@@ -1,0 +1,34 @@
+CREATE GRAPH TYPE {
+( personType:Person { address string , name string } ),
+( addressType:Address { occ string , city string } ),
+( placeType:Place { zip string , occ string } ),
+( x:Person2 { address string } ),
+( y:City { city string } ),
+( z:Zip { zip string } ),
+( BpqrKjyalo:jRQXHwEOgX { ceXtOpLrTo string , rHIlDNHmkO string } ),
+( kfCRazdGnc:qcOMHWWgoc { zBKSnIvutu string , odXVzXFJAP string } ),
+( kuzROjQrwy:JWrvqDCpcd { GUZisniiPc string , RVsGRHZutO string } ),
+( wBNjCgTgFA:luNZwagbom { mNNNErkvYu string , rFsIJGduMv string } ),
+( atvZtgKpxq:SUlkFLLPmk { scSaayjKlN string , ICyXRGffmG string } ),
+( kwQOkXoCPK:LqzRMpiecm { dlVHNInURD string , YTNUiXSBQF string } ),
+( doDqWiToeU:QMBTcdCxuV { VnVfAtHQoa string , uKcMkfBHfC string } ),
+( mmidPiDBuR:SJkIcaDCKh { lBPUGvIUOC string , sBcXtfVhEq string } ),
+( aNWwgrcQKE:BAaFVPeiNO { zAleAwHyxQ string , LGdzivubwV string } ),
+( uuyvhHmZri:GKppiZRlZz { PGsICOZcaZ string , gocqMlPNYE string } ),
+( ilkmcKlmjQ:iYqKQamxGx { ediUeDaQDu string , GHaCNQknOE string } ),
+( VWHMKSQmIb:piaXIHqBbr { rCZnsnUTPx string , xteHTDAtsm string } ),
+( OvHIzKLcGT:alykHKyWEY { GeBDITSadC string , tRagWpzYhy string } ),
+( lSAAnRsIhH:NUTjFTcBtb { FapkQbOzPh string , bqexwfmEdv string } ),
+( yQjvZBeHiu:pNVPvssDrN { xyZfLJpFPo string , xnmMGtGnzk string } ),
+( XJPdtNSNQd:ZZStoyxMLY { eDjLSskVmQ string , hWLXQWsqOY string } ),
+( CNRBrsxpyb:iMEdpYWkxg { VTaJfIGpHB string , BGytzybqTT string } ),
+( ryhZPTLchu:QbNbTsaMFF { xfabnDUTsk string , jyxOfWbrzG string } ),
+( VPLwreZqLK:HVfOSxxKpN { AaUoYHvMMF string , HZSekWVHMq string } ),
+( YcjLITjuYm:UStKTxxYFk { GcCgfcXblX string , hVOOFPCnmR string } ),
+(:x)
+  -[x_y:HAS_ADDRESS { } ]->
+(:y),
+(:y)
+  -[y_z:HAS_PLACE { } ]->
+(:z),
+}

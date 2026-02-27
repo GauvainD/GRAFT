@@ -1,0 +1,14 @@
+CREATE GRAPH TYPE {
+( inProceedingsType:DInProceedings { pages INTEGER , booktitle STRING , month INTEGER , title STRING , year INTEGER , url URL , cdrom BOOLEAN , pid INTEGER } ),
+( articleType:DArticle { pid INTEGER , pages INTEGER , number INTEGER , journal STRING , cdrom BOOLEAN , url STRING , title STRING , month INTEGER , year INTEGER , volume INTEGER } ),
+( authorType:PubAuthors { author STRING , pid INTEGER } ),
+( bookType:DBook { year INTEGER , cdrom BOOLEAN , url STRING , isbn STRING , editor STRING , pid INTEGER , publisher STRING , citel STRING , title STRING } ),
+( masterThesisType:MasterThesis { title STRING , school STRING , year INTEGER , author STRING } ),
+( phdThesisType:PhDThesis { publisher STRING , title STRING , month INTEGER , author STRING , school STRING , year INTEGER , isbn STRING , number INTEGER , series INTEGER } ),
+( onlineType:WWW { year INTEGER , pid INTEGER , title STRING , url STRING } ),
+( x:TArticle { abstract STRING , year INTEGER , refs STRING , note STRING , preliminary STRING , oldkey STRING , pages INTEGER , refkey STRING , xxxrefs STRING , num INTEGER , remarks STRING , title STRING , fullxxxrefs STRING , vol INTEGER , articleid STRING , month INTEGER } ),
+( Auth:{ authorid STRING , name STRING } ),
+(:x)
+  -[e:ARTICLE_PUBLISHED { } ]->
+(:Auth),
+}

@@ -1,0 +1,14 @@
+CREATE GRAPH TYPE {
+( flightType:Flight { fid INTEGER , dest STRING , src STRING } ),
+( hotelType:Hotel { hid STRING , flid INTEGER } ),
+( dAxJpxObrX:XhNlwReQUW { CzDWFallRT string , oRBincXknw string } ),
+( MVOETEacGk:vNsXAnHJdO { dNkgqXXVmd string , IprZoZiKDV string } ),
+( LnfRVtdyKq:fJewWgHYvb { QbAWgrJbDr string , tPsJfDDuvC string } ),
+( YUEgDQoKIz:yDAPcdDrnO { jUZdFCsyLJ string , xDegYLlOSP string } ),
+( zkuZwwhcZe:okKBlrZYFo { kUTrzevNMJ string , XzdUHfEqKG string } ),
+( ZXqiuzrLYp:vhhnsBHvyh { GwSnvaxTSE string , PgNVqqIypw string } ),
+( oahCNtYPQZ:TaCzxhBUqi { DrsJGSIOeL string , GpUkDdCimI string } ),
+( AEauNRiyPS:jugveHsKOy { ZmbNCkSvJL string , RsoZStTGeW string } ),
+( GBAcqgttQM:xtUWYbEIFA { hlGYkdbBWi string , eXgVgDdVYr string } ),
+( ckdyASLjiw:QtkzDxFzXa { mtSVpGmPeE string , fjavRwQBiM string } ),
+}
