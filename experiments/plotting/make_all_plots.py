@@ -5,10 +5,13 @@ import matplotlib.gridspec as gridspec
 import numpy as np
 import re
 import params
+import os
 
 idx = pd.IndexSlice
 
 FLOAT = re.compile(r"(\d+(?:\.\d*)?)")
+
+OUTPUT_DIR = "plots"
 
 DATASETS = ["persondata", "dblp_to_amalgam1", "amalgam1_to_amalgam3", "flighthotel"]
 
@@ -38,6 +41,20 @@ METRIC_LABELS_INCREASING = {
 }
 
 DATASET_LABELS = {}
+
+# CSV file paths
+CSV_SIMILARITIES = "./results/similarities.csv"
+CSV_CAND_SCHEMA = "./results/cand-schema-comparison.csv"
+CSV_CAND_SCHEMA_PATH = "./results/cand-schema-comparison-path.csv"
+CSV_SCHEMA_SIZE = "./results/schema-size-comparison.csv"
+CSV_DATASETS = "./results/dataset-comparison.csv"
+CSV_THETA = "./results/theta-comparison.csv"
+CSV_SIMILARITY_COMP = "./results/similarity-comparison.csv"
+
+FIGURE_6 = "figure6.pdf"
+FIGURE_7 = "figure7.pdf"
+FIGURE_8 = "figure8.pdf"
+FIGURE_9 = "figure9.pdf"
 
 AGG_FUNCS = {
     "similarity": "mean",
@@ -115,22 +132,22 @@ def load_one_pruning(filename):
 
 def load_pruning_dataset():
     try:
-        sims = pd.read_csv("results/similarities.csv")
+        sims = pd.read_csv(CSV_SIMILARITIES)
         sims = sims[sims["inserted"] == 0]
         sims.index = pd.Index(sims["dataset"])
         sims.index.names = ["dataset"]
         sims = sims.drop(columns=["inserted", "dataset"])
     except FileNotFoundError:
         print(
-            "Warning: results/similarities.csv not found. Creating mock data for testing."
+            f"Warning: {CSV_SIMILARITIES} not found. Creating mock data for testing."
         )
         sims = pd.DataFrame(
             {"similarity": [0.5]}, index=pd.Index(["mock_dataset"], name="dataset")
         )
 
     try:
-        pruning = load_one_pruning("./results/pruning-study.csv")
-        prun_path = load_one_pruning("./results/pruning-study-path.csv")
+        pruning = load_one_pruning(CSV_CAND_SCHEMA)
+        prun_path = load_one_pruning(CSV_CAND_SCHEMA_PATH)
         pruning["transfo_path"] = prun_path["transfo_path"]
     except FileNotFoundError:
         print("Error: Main data files not found.")
@@ -175,11 +192,11 @@ def load_pruning_dataset():
 
 
 def load_increasing_dataset():
-    sims = pd.read_csv("results/similarities.csv")
+    sims = pd.read_csv(CSV_SIMILARITIES)
     sims.index = pd.MultiIndex.from_frame(sims[["dataset", "inserted"]])
     sims = sims.drop(columns=["dataset", "inserted"])
 
-    increasing = pd.read_csv("./results/scalablity-study-all-datasets.csv")
+    increasing = pd.read_csv(CSV_SCHEMA_SIZE)
     new_index = increasing["index"].str.extract(r"([^-]*)-(.+)-sources-(\d+).*")
     new_index.columns = ["dataset", "strat", "inserted"]
     new_index["inserted"] = new_index["inserted"].astype(int)
@@ -216,7 +233,7 @@ def load_increasing_dataset():
 
 
 def load_additional_data():
-    similarities = pd.read_csv("./results/similarities.csv")
+    similarities = pd.read_csv(CSV_SIMILARITIES)
     similarities = similarities[similarities["inserted"] == 0].drop("inserted", axis=1)
     similarities.index = pd.Index(similarities["dataset"])
     similarities.drop("dataset", axis=1, inplace=True)
@@ -236,7 +253,7 @@ def load_additional_data():
     ]
     strat_order = ["greedy", "naive", "random", "weighted_distance"]
 
-    data = pd.read_csv("./results/new-datasets-full.csv", index_col=0)
+    data = pd.read_csv(CSV_DATASETS, index_col=0)
     data.index = pd.MultiIndex.from_tuples(
         [(name, x) for name, x in data.index.str.split("-")]
     )
@@ -250,10 +267,8 @@ def load_additional_data():
         df = df.drop(columns="index")
         return df
 
-    theta_data = load_param_data("./results/all-datasets-theta-nopath.csv", "theta")
-    minhash_data = load_param_data(
-        "./results/all-datasets-minhash-nopath.csv", "minhash"
-    )
+    theta_data = load_param_data(CSV_THETA, "theta")
+    minhash_data = load_param_data(CSV_SIMILARITY_COMP, "minhash")
     cols = ["similarity", "time", "path"]
     for col in cols:
         for df in [data, theta_data, minhash_data]:
@@ -333,7 +348,7 @@ def get_aggregated_data_pruning(df, metrics):
 # Plot: Pruning
 
 
-def make_pruning_plot(df):
+def make_figure_6(df):
     datasets = ["persondata", "dblp_to_amalgam1", "amalgam1_to_amalgam3", "flighthotel"]
     if len(datasets) > 4:
         print(
@@ -422,7 +437,7 @@ def make_pruning_plot(df):
     plt.tight_layout()
     plt.subplots_adjust(top=params.TOP_LEGEND)
 
-    output_file = "pruning_plot_refactored.pdf"
+    output_file = os.path.join(OUTPUT_DIR, FIGURE_6)
     plt.savefig(output_file, bbox_inches="tight")
     print(f"Plot saved to {output_file}")
 
@@ -430,7 +445,7 @@ def make_pruning_plot(df):
 # Plot: Additional
 
 
-def make_additional_plot(data, theta_data, minhash_data):
+def make_figure_9(data, theta_data, minhash_data):
     datasets = ["persondata", "dblp_to_amalgam1", "amalgam1_to_amalgam3", "flighthotel"]
 
     metrics_to_plot = ["similarity", "time", "path", "dup"]
@@ -578,7 +593,7 @@ def make_additional_plot(data, theta_data, minhash_data):
     plt.tight_layout()
     plt.subplots_adjust(top=params.TOP_LEGEND)
 
-    output_file = "additional_plot_refactored.pdf"
+    output_file = os.path.join(OUTPUT_DIR, FIGURE_8)
     plt.savefig(output_file, bbox_inches="tight")
     print(f"Plot saved to {output_file}")
 
@@ -586,7 +601,7 @@ def make_additional_plot(data, theta_data, minhash_data):
 # Plot: Increasing
 
 
-def make_increasing_plot(prun_df, inc_df):
+def make_figure_7(prun_df, inc_df):
     datasets = ["persondata", "dblp_to_amalgam1", "amalgam1_to_amalgam3", "flighthotel"]
     if len(datasets) > 4:
         print(
@@ -681,7 +696,7 @@ def make_increasing_plot(prun_df, inc_df):
     plt.tight_layout()
     plt.subplots_adjust(top=params.TOP_LEGEND)
 
-    output_file = "increasing_plot_refactored.pdf"
+    output_file = os.path.join(OUTPUT_DIR, FIGURE_7)
     plt.savefig(output_file, bbox_inches="tight")
     print(f"Plot saved to {output_file}")
 
@@ -700,9 +715,10 @@ def make_stackbars_plot():
     }
     datasets = ["persondata", "dblp_to_amalgam1", "amalgam1_to_amalgam3", "flighthotel"]
     dataset_names = {ds: f"D{i + 1}" for i, ds in enumerate(datasets)}
-    hatches = [None, "///", "...", "\\\\\\", "***"]
+    colors = sb.color_palette("tab10", n_colors=len(cols))
+    # hatches = [None, "///", "...", "\\\\\\", "***"]
 
-    data = pd.read_csv("./results/new-datasets-full.csv")
+    data = pd.read_csv(CSV_DATASETS)
 
     data[["strat", "dataset"]] = data["index"].str.split("-", expand=True)
 
@@ -728,8 +744,8 @@ def make_stackbars_plot():
             x_labels,
             values,
             left=bottom,
-            hatch=hatches[i],
-            color="w",
+            # hatch=hatches[i],
+            color=colors[i],
             edgecolor="black",
             label=col_names[col],
         )
@@ -748,20 +764,24 @@ def make_stackbars_plot():
     )
     plt.tight_layout()
 
-    plt.savefig("alt_stackbars.pdf", bbox_inches="tight")
-    print("Plot saved to alt_stackbars.pdf")
+    filename = os.path.join(OUTPUT_DIR, FIGURE_9)
+    plt.savefig(filename, dpi=300, bbox_inches="tight")
+    print(f"Plot saved to {filename}")
 
 
 # Main Execution
 
 if __name__ == "__main__":
     try:
+        if not os.path.isdir(OUTPUT_DIR):
+            os.makedirs(OUTPUT_DIR)
+
         print("Loading pruning data...")
         pruning_data = load_pruning_dataset()
 
         if not pruning_data.empty:
             print("Generating pruning plot...")
-            make_pruning_plot(pruning_data)
+            make_figure_6(pruning_data)
         else:
             print("No pruning data loaded.")
 
@@ -770,14 +790,14 @@ if __name__ == "__main__":
 
         if not pruning_data.empty:
             print("Generating increasing plot...")
-            make_increasing_plot(pruning_data, increasing_data)
+            make_figure_7(pruning_data, increasing_data)
         else:
             print("No data loaded for increasing plot.")
 
         print("Loading additional data...")
         additional_data = load_additional_data()
         print("Generating additional plot...")
-        make_additional_plot(*additional_data)
+        make_figure_9(*additional_data)
 
         print("Generating stacked bars plot...")
         make_stackbars_plot()

@@ -17,6 +17,7 @@ OVERWRITE = False
 APPEND = False
 PRUNE_TIMEOUTS = False
 NUM_RUNS = 5
+SAVE_TRANSFO_PATH = False
 
 DEFAULTS: dict[str, Any] = {
     "pruning": 8,
@@ -109,7 +110,10 @@ class ResultSet:
         if not self._sets:
             return
         sample = next(iter(self._sets.values()))
-        fieldnames = ["index"] + list(sample.data.keys())
+        all_keys = list(sample.data.keys())
+        if not SAVE_TRANSFO_PATH:
+            all_keys = [k for k in all_keys if k != "transfo_path"]
+        fieldnames = ["index"] + all_keys
         with open(filename, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
             writer.writeheader()
