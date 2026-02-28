@@ -43,13 +43,13 @@ METRIC_LABELS_INCREASING = {
 DATASET_LABELS = {}
 
 # CSV file paths
-CSV_SIMILARITIES = "./results/similarities.csv"
-CSV_CAND_SCHEMA = "./results/cand-schema-comparison.csv"
-CSV_CAND_SCHEMA_PATH = "./results/cand-schema-comparison-path.csv"
-CSV_SCHEMA_SIZE = "./results/schema-size-comparison.csv"
-CSV_DATASETS = "./results/dataset-comparison.csv"
-CSV_THETA = "./results/theta-comparison.csv"
-CSV_SIMILARITY_COMP = "./results/similarity-comparison.csv"
+CSV_SIMILARITIES = "./csv/similarities.csv"
+CSV_CAND_SCHEMA = "./csv/cand-schema-comparison.csv"
+CSV_CAND_SCHEMA_PATH = "./csv/cand-schema-comparison-path.csv"
+CSV_SCHEMA_SIZE = "./csv/schema-size-comparison.csv"
+CSV_DATASETS = "./csv/dataset-comparison.csv"
+CSV_THETA = "./csv/theta-comparison.csv"
+CSV_SIMILARITY_COMP = "./csv/similarity-comparison.csv"
 
 FIGURE_6 = "figure6.pdf"
 FIGURE_7 = "figure7.pdf"
