@@ -1,3 +1,4 @@
+//! Compute similarity between two schemas.
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
@@ -28,6 +29,7 @@ struct Args {
     arg_graph2: String,
 }
 
+/// Reads the schema from a file.
 fn load_graph(path: &str) -> PropertyGraph {
     let mut buf = BufReader::new(File::open(path).unwrap());
     let mut text = String::new();

@@ -1,3 +1,4 @@
+//! Module dedicated to handling similarity between property graph schemas
 use std::{collections::HashMap, fmt::format};
 
 use petgraph::graph::{EdgeIndex, NodeIndex};
@@ -5,6 +6,7 @@ use probminhash::probminhasher::ProbMinHash3aSha;
 
 use crate::property_graph::PropertyGraph;
 
+/// Extracts features from a node. One feature per node type/name, property and label
 pub fn node_base_features(g: &PropertyGraph, n: &NodeIndex) -> Vec<String> {
     let mut features = Vec::new();
     let weight = g.graph.node_weight(*n).unwrap();
@@ -18,6 +20,7 @@ pub fn node_base_features(g: &PropertyGraph, n: &NodeIndex) -> Vec<String> {
     features
 }
 
+/// Extracts features from the data of an edge. One feature per node type/name, property and label
 pub fn edge_base_features(g: &PropertyGraph, e: &EdgeIndex) -> Vec<String> {
     let mut features = Vec::new();
     let weight = g.graph.edge_weight(*e).unwrap();
@@ -31,6 +34,8 @@ pub fn edge_base_features(g: &PropertyGraph, e: &EdgeIndex) -> Vec<String> {
     features
 }
 
+/// Generate features from the features of a node or edge with no regard to connectivity (only data
+/// of the element). See pair_features and adj_features for other features.
 pub fn inner_features(base_features: &[String]) -> Vec<String> {
     let mut res: Vec<String> = base_features.iter().cloned().collect();
     for i in 0..base_features.len() {
@@ -43,6 +48,7 @@ pub fn inner_features(base_features: &[String]) -> Vec<String> {
     res
 }
 
+/// Generate features from two sets of features. For example, a node and an incident edge.
 pub fn pair_features(first_features: &[String], second_features: &[String], prefix: &str) -> Vec<String> {
     let mut res = Vec::new();
     for f1 in first_features.iter() {
@@ -53,6 +59,8 @@ pub fn pair_features(first_features: &[String], second_features: &[String], pref
     res
 }
 
+/// Generates all features from an edge and its incident nodes. Pairs are created between features
+/// of the two nodes and features of the edge with each node.
 pub fn adj_features(from_features: &[String], to_features: &[String], edge_features: &[String]) -> Vec<String> {
     pair_features(from_features, to_features, "adj:").into_iter()
         .chain(pair_features(from_features, edge_features, "").into_iter())
@@ -60,6 +68,8 @@ pub fn adj_features(from_features: &[String], to_features: &[String], edge_featu
         .collect()
 }
 
+/// Extracts features from a property graph that include information about adjacency as well as
+/// data.
 pub fn property_graph_features(g: &PropertyGraph) -> Vec<String> {
     let node_features: HashMap<NodeIndex, Vec<String>> = g.graph.node_indices().map(|id| (id,node_base_features(g, &id))).collect();
     g.graph.node_indices().flat_map(|id| inner_features(node_features.get(&id).unwrap()).into_iter())
@@ -73,6 +83,8 @@ pub fn property_graph_features(g: &PropertyGraph) -> Vec<String> {
         .collect()
 }
 
+/// Computes the minhash signature of a property graph schema with a sample of size `sample`.
+/// Features are weighted with their frequency of occurrence.
 pub fn property_graph_minhash(g: &PropertyGraph, sample: usize) -> Vec<String> {
     let features = property_graph_features(g).into_iter().fold(HashMap::new(), |mut map, feature| {
         *map.entry(feature).or_insert(0) += 1;
@@ -83,6 +95,8 @@ pub fn property_graph_minhash(g: &PropertyGraph, sample: usize) -> Vec<String> {
     minhash.get_signature().to_vec()
 }
 
+/// Computes the Jaccard index between two property graph schemas from their respective sets of
+/// features. Features are weighted with their frequency of occurrence.
 pub fn jaccard_index(g1: &PropertyGraph, g2: &PropertyGraph) -> f64 {
     let mut isolated1 = property_graph_features(g1)
         .into_iter()

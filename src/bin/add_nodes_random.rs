@@ -1,3 +1,4 @@
+//! Used to augment schemas by inserting random nodes.
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::File;
@@ -27,10 +28,12 @@ Options:
     --identical             Use the same label, properties and values in both schemas
 ";
 
+/// Generate a random string of given length
 fn random_string(n: usize) -> String {
     rand::thread_rng().sample_iter(rand::distr::Alphabetic).take(n).map(char::from).collect()
 }
 
+/// Insert a random node into both schemas. If identical, the same strings are used in both.
 fn add_random_node(source: &mut PropertyGraph,  target: &mut PropertyGraph, size: usize, identical: bool) {
     let mut name= "".to_string();
     let mut label= "".to_string();

@@ -19,9 +19,15 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use self::souffle::{create_program_instance, Program};
+
+/// Precision of the comparison
 const EPS: f64 = 1e-12;
+
+/// Stores a GraphTransformation along with the similarity of its result to the target and a unique
+/// hash of the result for equality comparison
 pub struct SimGraph(f64, i64, GraphTransformation);
 
+/// Two SimGraph are equal if their similarity is close enough and their hashes are equal
 impl PartialEq for SimGraph {
     fn eq(&self, other: &Self) -> bool {
         (self.0 - other.0).abs() < EPS && self.1 == other.1
@@ -37,6 +43,7 @@ impl PartialOrd for SimGraph {
 impl Eq for SimGraph {}
 
 impl Ord for SimGraph {
+    /// Comparison is based on the similarity with tie break using the hash.
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         match self.0 - other.0 {
             x if x < -EPS => std::cmp::Ordering::Greater,
@@ -58,7 +65,9 @@ impl Display for SimGraph {
     }
 }
 
-/// Should apply a set of transformations, filter the graphs and return the result
+/// Transforms the provided PropertyGraph with the provided program encoding meta-transformations.
+/// If a target schema is provided, also computes similarity of each result to that schema.
+/// Results are sent to the provided channel.
 pub fn handle_graph(
     program: Program,
     g: PropertyGraph,
@@ -78,6 +87,8 @@ pub fn handle_graph(
             let mut hash = DefaultHasher::new();
             h.result.hash(&mut hash);
             let key: i64 = hash.finish() as i64;
+            // If we have a target, we can compute similarity and prune the number of results.
+            // Otherwise, each result is directly sent into the channel.
             if let Some(target) = target_graph.as_ref() {
                 if !stored.contains(&key) {
                     stored.insert(key);
@@ -95,6 +106,8 @@ pub fn handle_graph(
                     {
                         *SIM_TIME.lock().unwrap() += start.elapsed();
                     }
+                    // In order to only keep the num_bests most similar, we insert each result into
+                    // the heap and remove the least similar if we have too many.
                     bests.push(SimGraph(sim, key, h));
                     if bests.len() > *num_bests {
                         let removed = bests.pop().unwrap();
@@ -113,7 +126,8 @@ pub fn handle_graph(
     Ok(())
 }
 
-/// Should apply a set of transformations, filter the graphs and return the result
+/// Transforms each provided PropertyGraph (schema) with the handle_graph function, one by one.
+/// Supports multi-thread and will distribute provided graphs across available threads.
 pub fn handle_graphs(
     program_name: &str,
     v: Vec<PropertyGraph>,
@@ -131,22 +145,23 @@ pub fn handle_graphs(
     Ok(())
 }
 
+/// Type sent between computer threads and aggregate threads. The provided string is used to
+/// display in the terminal.
 #[derive(Debug)]
 pub enum LogInfo {
+    /// Simple transformation without similarity. Used if no target schema is provided.
     Transfo(GraphTransformation, String),
+    /// Transformation combined with similarity to target.
     TransfoSim(SimGraph, String),
 }
 
-fn store_property_graph(g: &PropertyGraph, db: &neo4rs::Graph, rt: &tokio::runtime::Runtime) {
-    let tx = rt.block_on(db.start_txn()).unwrap();
-}
-
+/// Code for the aggregate thread when using Neo4j. Reads the provided channel, and writes the results to the Neo4j
+/// database. If first_run, each schema being transformed is a source schema.
 pub fn output_neo4j(
     receiver: Receiver<LogInfo>,
     first_run: bool,
     config: crate::neo4j::Neo4jConfig,
 ) -> Result<(Option<f64>, Option<i64>), TransProofError> {
-    //TODO remove the unwraps
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
@@ -164,7 +179,12 @@ pub fn output_neo4j(
         match log {
             LogInfo::Transfo(t, _) => {
                 i += 1;
+                let neotime = Instant::now();
                 runtime.block_on(write_graph_transformation(&t, first_run, None, &neograph));
+                neo4j_time += neotime.elapsed();
+                {
+                    *NEO4J_TIME.lock().unwrap() += neotime.elapsed();
+                }
             }
             LogInfo::TransfoSim(t, _) => {
                 i += 1;
@@ -185,9 +205,6 @@ pub fn output_neo4j(
                     best_sim = Some(t.0);
                     best_key = Some(t.1);
                 }
-                // bufout.write_all(&format!("{}", t).into_bytes())?;
-                // bufout.write_all(&s.into_bytes())?;
-                // bufout.write_all(&['\n' as u8])?;
             }
         }
     }
@@ -204,6 +221,9 @@ pub fn output_neo4j(
     Ok((best_sim, best_key))
 }
 
+/// Code for the aggregate thread without Neo4j. Reads the provided channel, and outputs the
+/// results to the terminal or to a file. If first_run, each schema being transformed is a source
+/// schema.
 pub fn output(
     receiver: Receiver<LogInfo>,
     filename: String,
@@ -253,7 +273,8 @@ pub fn output(
     Ok((best_sim, best_key))
 }
 
-//#[derive(Clone)]
+/// Allows using either a unlimited channel or a channel with limited capacity. Useful if output
+/// (SSD, database, ...) is slower than computation and overfills memory.
 pub enum SenderVariant<T>
 where
     T: Send,

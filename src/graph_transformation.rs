@@ -1,3 +1,5 @@
+//! Module dedicated to GraphTransformation. These represent a schema being transformed and the
+//! result of a transformation.
 use std::{collections::HashMap, fmt::Display};
 
 use log::error;
@@ -10,24 +12,31 @@ use crate::{
     constants::IDEMPOTENCE, property_graph::{Properties, PropertyGraph}, transformation::Operation
 };
 
+/// All data for a single transformation.
 #[derive(Debug)]
 pub struct GraphTransformation {
+    /// The initial schema being transformed
     pub init: PropertyGraph,
+    /// The resulting schema
     pub result: PropertyGraph,
+    /// The list of operations applied in order to the initial schema
     pub operations: Vec<String>,
+    /// If provided, the id of the meta-transformation
     pub transfo_id: Option<String>,
+    /// If provided, the first edit operation (obtained from the Start relation)
     pub root: Option<Operation>,
-    node_map: HashMap<u32, NodeIndex<u32>>,
-    edge_map: HashMap<u32, EdgeIndex<u32>>,
-    node_label_map: HashMap<u32, u32>,
-    edge_label_map: HashMap<u32, u32>,
+    /// Maps each node name to the corresponding index in the graph
     node_ids: HashMap<String, NodeIndex<u32>>,
+    /// Maps each edge name to the corresponding index in the graph
     edge_ids: HashMap<String, EdgeIndex<u32>>,
+    /// Maps each node label to its index
     label_node_ids: HashMap<String, u32>,
+    /// Maps each edge label to its index
     label_edge_ids: HashMap<String, u32>,
 }
 
 impl From<&PropertyGraph> for GraphTransformation {
+    /// Produces a GraphTransformation from a PropertyGraph
     fn from(g: &PropertyGraph) -> Self {
         GraphTransformation {
             init: g.clone(),
@@ -35,10 +44,6 @@ impl From<&PropertyGraph> for GraphTransformation {
             operations: Vec::new(),
             transfo_id: None,
             root: None,
-            node_map: HashMap::new(),
-            edge_map: HashMap::new(),
-            node_label_map: HashMap::new(),
-            edge_label_map: HashMap::new(),
             node_ids: g
                 .graph
                 .node_references()
@@ -81,10 +86,6 @@ impl Clone for GraphTransformation {
             operations: self.operations.clone(),
             root: self.root.clone(),
             transfo_id: self.transfo_id.clone(),
-            node_map: self.node_map.clone(),
-            edge_map: self.edge_map.clone(),
-            node_label_map: self.node_label_map.clone(),
-            edge_label_map: self.edge_label_map.clone(),
             node_ids: self.node_ids.clone(),
             edge_ids: self.edge_ids.clone(),
             label_node_ids: self.label_node_ids.clone(),
@@ -94,22 +95,10 @@ impl Clone for GraphTransformation {
 }
 
 impl GraphTransformation {
-    fn get_node_index(&self, id: &u32) -> NodeIndex<u32> {
-        *self.node_map.get(&id).unwrap_or(&(*id).into())
-    }
 
-    fn get_edge_index(&self, id: &u32) -> EdgeIndex<u32> {
-        *self.edge_map.get(&id).unwrap_or(&(*id).into())
-    }
-
-    fn get_node_label_index(&self, id: &u32) -> u32 {
-        *self.node_label_map.get(id).unwrap_or(id)
-    }
-
-    fn get_edge_label_index(&self, id: &u32) -> u32 {
-        *self.edge_label_map.get(id).unwrap_or(id)
-    }
-
+    /// Transforms the resulting schema by applying the given operation. If IDEMPOTENCE is set to
+    /// true, operations that do not change the schema will be ignored. Otherwise, None will be
+    /// returned.
     pub fn apply(&mut self, op: &Operation) -> Option<()> {
         let idempotent = IDEMPOTENCE.get().unwrap();
         match op {
@@ -172,7 +161,6 @@ impl GraphTransformation {
             }
             Operation::AddVertex(v) => {
                 if self.node_ids.contains_key(v) {
-                    // error!("Node {v} already exists.");
                     if !idempotent {
                         return None;
                     }
@@ -195,7 +183,6 @@ impl GraphTransformation {
             }
             Operation::AddEdge(e, start, end) => {
                 if self.edge_ids.contains_key(e) {
-                    // error!("Edge {e} already exists.");
                     if !idempotent {
                         return None;
                     }

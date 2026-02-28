@@ -1,3 +1,4 @@
+//! Module dedicated to parsing the pgschema format for Property Graph Schemas
 use std::collections::HashMap;
 
 use pest::{iterators::Pair, Parser};
@@ -6,11 +7,13 @@ use petgraph::graph::NodeIndex;
 
 use crate::property_graph::{Properties, PropertyGraph};
 
+/// Parser for the pgschema format
 #[derive(Parser)]
 #[grammar = "parsing/PropertyGraph.pest"]
 pub struct PropertyGraphParser;
 
 impl PropertyGraphParser {
+    /// Converts a pgschema string to a PropertyGraph
     pub fn convert_text(&self, input: &str) -> Vec<PropertyGraph> {
         let mut res : Vec<PropertyGraph> = PropertyGraphParser::parse(Rule::schemas, input)
             .unwrap()
@@ -23,6 +26,7 @@ impl PropertyGraphParser {
         res
     }
 
+    /// Builds the Property Graph from the result of parsing
     pub fn build_graph(&self, v: Pair<'_, Rule>) -> PropertyGraph {
         v.as_rule();
         let mut graph = PropertyGraph::default();
@@ -31,6 +35,7 @@ impl PropertyGraphParser {
         graph
     }
 
+    /// Extracts the labels of a node/edge
     fn extract_labels(&self, v: Pair<'_, Rule>, lst: &mut Vec<String>) {
         match v.as_rule() {
             Rule::labelSpecSet => v.into_inner().for_each(|i| self.extract_labels(i, lst)),
@@ -40,6 +45,7 @@ impl PropertyGraphParser {
         }
     }
 
+    /// Extracts the properties of a node/edge
     fn extract_properties(&self, v: Pair<'_, Rule>, props: &mut HashMap<String, String>) {
         match v.as_rule() {
             Rule::propertySpec => v
@@ -58,6 +64,7 @@ impl PropertyGraphParser {
         }
     }
 
+    /// Extracts data for a node/edge (label and properties)
     fn extract_label_and_props(
         &self,
         v: Pair<'_, Rule>,
@@ -79,6 +86,8 @@ impl PropertyGraphParser {
         }
     }
 
+    /// From the results of parsing, populates the provided property graph and the map from node
+    /// name to node index.
     fn handle_result(
         &self,
         v: Pair<'_, Rule>,
@@ -169,30 +178,5 @@ impl PropertyGraphParser {
             }
             _ => (),
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::PropertyGraphParser;
-
-    #[test]
-    fn smoke_test() {
-        let text = "CREATE GRAPH TYPE fraudGraphType {
-( personType : Person { name STRING , birthday DATE }) ,
-( customerType : Person & Customer { name STRING , since DATE }) ,
-( suspiciousType : Suspicious { reason STRING }) ,
-( : customerType )
--[ friendType : Knows & Likes {time INT} ] ->
-( : customerType ),
-( : suspiciousType )
--[ aliasType {frequency INT} ] ->
-( : suspiciousType )
-}";
-        let parser = PropertyGraphParser;
-        let results = parser.convert_text(text);
-        let g = results.get(0).unwrap();
-        println!("{}", g);
-        println!("{}", results.len());
     }
 }

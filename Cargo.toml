@@ -29,16 +29,7 @@ cxx-build = "1.0.119"
 name = "transproof"
 
 [[bin]]
-name = "serialize_graph"
-
-[[bin]]
 name = "add_nodes_random"
 
 [[bin]]
 name = "similarity"
-
-[[bin]]
-name = "datalog2pgschema"
-
-[[bin]]
-name = "apply_transfos"

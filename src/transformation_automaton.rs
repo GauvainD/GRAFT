@@ -1,3 +1,10 @@
+//! Module dedicated to the meta transformations after evaluating the Datalog rules. Is used to
+//! generate the transformations and to apply them to the property graph at the same time.
+//!
+//! The evaluated meta-transformations are stored as a rooted graph where each root is an operation
+//! in the Start set. Each meta-transformation can also be given an identifier which is used to
+//! avoid meta-transformations rules being mixed together. An arc is added between to edit
+//! operation if they have the same root, the same id and are allowed by the Next relationship.
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use petgraph::{
@@ -15,18 +22,28 @@ use crate::{
     transformation::{Operation, OperationName},
 };
 
+/// Node of the automaton.
 #[derive(Clone, Debug)]
 pub struct AutomatonNode {
+    /// Root of the transformation
     pub root: Operation,
+    /// Id of the meta-transformation that produced this transformation
     pub t_id: Option<usize>,
+    /// Edit operation
     pub op: Operation,
+    /// Set of edit operations if this node is a contracted clique.
     pub group: Option<Vec<Operation>>,
 }
 
+/// The structure produced by the Next relationship.
 pub struct TransformationAutomaton {
+    /// Initial edit operations (ids of the corresponding nodes in the graph)
     pub start: Vec<NodeIndex>,
+    /// Set of edit operations for each combination of root and id.
     pub node_set: HashMap<(Operation, Option<usize>), HashMap<Operation, NodeIndex>>,
+    /// Mapping between id and the text given in the Datalog (for efficiency)
     pub transfo_ids: HashMap<Option<usize>, String>,
+    /// Graph induced by the Next relationship.
     pub graph: StableGraph<AutomatonNode, Option<Operation>, Directed>,
 }
 
@@ -40,6 +57,7 @@ impl TransformationAutomaton {
         }
     }
 
+    /// Inserts a new edit operation into the automaton. Arcs are not inserted.
     pub fn add_operation(
         &mut self,
         operation: &Operation,
@@ -80,6 +98,9 @@ impl Default for TransformationAutomaton {
     }
 }
 
+/// Utility function to produce an undirected graph that will be used to detect cliques. Contains
+/// an edge between two edit operations if they have the same root, id and are the same meta-edit
+/// operation (thus commutative).
 fn to_undirected(
     g: &TransformationAutomaton,
 ) -> (
@@ -113,6 +134,7 @@ fn to_undirected(
     (new_graph, node_map)
 }
 
+/// Detects cliques and contracts them into a single artificial edit operation.
 pub fn contract_graph(g: &mut TransformationAutomaton) {
     let (undirected, node_map) = to_undirected(g);
     let cliques = petgraph::algo::maximal_cliques(&undirected);
@@ -165,11 +187,17 @@ pub fn contract_graph(g: &mut TransformationAutomaton) {
     }
 }
 
+/// Custom efficient generator to generate all subsets of a given clique.
 pub struct SubsetGenerator {
+    /// List of edit operations
     list: Vec<Operation>,
+    /// Schema being transformed
     base: GraphTransformation,
+    /// Current sequence of transformed schemas
     current: Vec<GraphTransformation>,
+    /// Indices of the edit operations currently in the subset
     indices: Vec<usize>,
+    /// Position of the last index in indices (to avoid resizing)
     index: usize,
 }
 
@@ -189,6 +217,7 @@ impl SubsetGenerator {
 impl Iterator for SubsetGenerator {
     type Item = GraphTransformation;
 
+    /// Generates the next subset. Tries to minimizes changes between sequential subsets.
     fn next(&mut self) -> Option<Self::Item> {
         if self.list.is_empty() {
             None
@@ -231,13 +260,21 @@ impl Iterator for SubsetGenerator {
     }
 }
 
+/// Generator for each transformation.
 pub struct TransformGeneratorGraph {
+    /// The current automaton obtained after evaluating the Datalog program.
     automaton: TransformationAutomaton,
+    /// List of initial edit operations (Start)
     starts: VecDeque<NodeIndex>,
+    /// List of current states to be expanded
     list: VecDeque<(NodeIndex, GraphTransformation, usize)>,
+    /// The initial schema (used when generating the initial state)
     g: GraphTransformation,
+    /// List of applied edit operations to prevent duplication
     seen: HashSet<NodeIndex>,
+    /// Current sequence of edit operations
     current_path: Vec<NodeIndex>,
+    /// If expanding a clique, generator to use
     generator: Option<(NodeIndex, usize, SubsetGenerator)>,
 }
 
@@ -259,6 +296,8 @@ impl TransformGeneratorGraph {
         }
     }
 
+    /// If no states are to be expanded but not all edit operations in Start have been used, fills
+    /// the state list with a new one from one of the initial edit operations.
     fn start_list(&mut self) -> bool {
         if self.list.is_empty() {
             if self.starts.is_empty() {
@@ -281,8 +320,12 @@ impl TransformGeneratorGraph {
 impl Iterator for TransformGeneratorGraph {
     type Item = GraphTransformation;
 
+    /// Generates the next transformation
     fn next(&mut self) -> Option<Self::Item> {
+        // If expanding a clique or not all initial edit operations have been used, we keep going.
         while self.generator.is_some() || self.start_list() {
+            // If expanding a clique, generate the next clique expansion (subset of edit
+            // operations)
             if let Some((node, depth, generator)) = self.generator.as_mut() {
                 if let Some(g) = generator.next() {
                     let mut neighbors = self.automaton.graph.neighbors(*node).detach();
@@ -296,12 +339,15 @@ impl Iterator for TransformGeneratorGraph {
                 }
             } else {
                 let (current, mut g, depth) = self.list.pop_back().unwrap();
+                // Clear current path if backtracking
                 for node in self.current_path.drain(depth..) {
                     self.seen.remove(&node);
                 }
+                // If duplicated edit operation, stop this branch
                 if self.seen.contains(&current) {
                     return Some(g);
                 }
+                // If current edit operation is a contracted clique, start expanding it
                 if let Some(group) = self.automaton.graph[current].group.clone() {
                     self.seen.insert(current.clone());
                     self.current_path.push(current.clone());
@@ -311,12 +357,14 @@ impl Iterator for TransformGeneratorGraph {
                     self.seen.insert(current.clone());
                     self.current_path.push(current.clone());
                     let mut neighbor_count = 0;
+                    // Generates sequences extension from the Next relationship
                     let mut neighbors = self.automaton.graph.neighbors(current).detach();
                     while let Some(neighbor) = neighbors.next_node(&self.automaton.graph) {
                         neighbor_count += 1;
                         let ng = g.clone();
                         self.list.push_back((neighbor, ng, depth + 1));
                     }
+                    // If no possible extension, output the result.
                     if neighbor_count == 0 {
                         return Some(g);
                     }

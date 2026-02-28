@@ -1,3 +1,4 @@
+//! Module dedicated to representing Property Graphs Schemas
 use std::borrow::Cow;
 use std::hash::Hash;
 
@@ -16,11 +17,12 @@ use petgraph::{
 };
 use thiserror::Error;
 
+/// The type of labels
 type Label = String;
+/// The type of label ids
 type LabelId = u32;
 
-type IsomorphismData<'a> = Option<(&'a HashMap<String, String>, HashSet<String>)>;
-
+/// Unique id manager
 #[derive(Debug, Clone)]
 struct IdManager<A>
 where
@@ -34,6 +36,7 @@ impl<A> IdManager<A>
 where
     A: Copy + Default + AddAssign<A> + From<u8>,
 {
+    /// Gets a unique id
     fn get_id(&mut self) -> A {
         self.free_ids.pop_back().unwrap_or_else(|| {
             let id = self.max_id;
@@ -42,6 +45,7 @@ where
         })
     }
 
+    /// Frees an assigned id for reuse.
     fn free_id(&mut self, id: A) {
         self.free_ids.push_back(id);
     }
@@ -59,21 +63,28 @@ where
     }
 }
 
+/// Error type for label operations
 #[derive(Error, Debug)]
 pub enum LabelError {
     #[error("Unknown label id: {0}")]
     UnknownLabelId(LabelId),
 }
 
+/// Utility struct for mapping elements to labels
 #[derive(Debug, Clone)]
 pub struct LabelMap<E>
 where
     E: Hash + Eq + Copy,
 {
+    /// Manager for unique ids
     id_manager: IdManager<LabelId>,
+    //// Maps each id to a label for performance purposes (faster to compare numbers than strings)
     labels: HashMap<LabelId, Label>,
+    /// Maps each label to a unique id
     label_ids: HashMap<Label, LabelId>,
+    /// Maps each element to the labels it has
     labels_map: HashMap<E, HashSet<LabelId>>,
+    /// Maps each label to the elements that have that label
     elements: HashMap<LabelId, HashSet<E>>,
 }
 
@@ -96,25 +107,29 @@ impl<E> LabelMap<E>
 where
     E: Hash + Eq + Copy,
 {
+    /// Gets the label for the given id
     pub fn get_label(&self, id: LabelId) -> Option<&Label> {
         self.labels.get(&id)
     }
 
+    /// Gets the id for the given label
     pub fn get_id(&self, label: &Label) -> Option<&LabelId> {
         self.label_ids.get(label)
     }
 
+    /// Iterates over all labels
     pub fn labels(&self) -> impl Iterator<Item = &LabelId> {
         self.labels.keys()
     }
 
+    /// Checks if the given element has the given label
     pub fn has_label(&self, element: &E, label: LabelId) -> bool {
         self.labels_map
-            .get(element)
-            .and_then(|set| Some(set.contains(&label)))
+            .get(element).map(|set| set.contains(&label))
             .unwrap_or(false)
     }
 
+    /// Iterates over all labels for the given element
     pub fn element_labels(&self, element: &E) -> impl Iterator<Item = &LabelId> {
         self.labels_map
             .get(element)
@@ -122,6 +137,7 @@ where
             .flat_map(|v| v.iter())
     }
 
+    /// Iterates over all elements for the given label
     pub fn label_elements(&self, labelid: LabelId) -> impl Iterator<Item = &E> {
         self.elements
             .get(&labelid)
@@ -129,6 +145,7 @@ where
             .flat_map(|v| v.iter())
     }
 
+    /// Creates a new label
     pub fn add_label(&mut self, label: Label) -> LabelId {
         let id = *self
             .label_ids
@@ -139,6 +156,7 @@ where
         id
     }
 
+    /// Deletes a label
     pub fn delete_label(&mut self, id: LabelId) -> Result<(), LabelError> {
         self.labels
             .remove(&id)
@@ -159,6 +177,7 @@ where
         Ok(())
     }
 
+    /// Changes the name of a label
     pub fn change_label(&mut self, id: LabelId, new_label: Label) -> Result<(), LabelError> {
         if !self.labels.contains_key(&id) {
             return Err(LabelError::UnknownLabelId(id));
@@ -170,6 +189,7 @@ where
         Ok(())
     }
 
+    /// Adds the given label to the given element
     pub fn add_label_mapping(&mut self, element: &E, labelid: LabelId) -> Result<(), LabelError> {
         if !self.labels.contains_key(&labelid) {
             return Err(LabelError::UnknownLabelId(labelid));
@@ -179,6 +199,7 @@ where
         Ok(())
     }
 
+    /// Removes the given label from the given element
     pub fn remove_label_mapping(
         &mut self,
         element: &E,
@@ -198,6 +219,7 @@ where
         Ok(())
     }
 
+    /// Removes the given element from the manager
     pub fn remove_element(&mut self, element: &E) {
         self.labels_map.remove(element).and_then(|set| {
             set.iter().for_each(|label| {
@@ -211,20 +233,28 @@ where
     }
 }
 
+/// Properties of a node or edge. Contains its name and its properties
 #[derive(Debug, Clone)]
 pub struct Properties {
     pub name: String,
     pub map: HashMap<String, String>,
 }
 
+/// Property Graph Schema. Contains the graph structure with properties and maps between
+/// nodes/edges and labels.
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct PropertyGraph {
+    /// The graph
     pub graph: StableDiGraph<Properties, Properties, u32>,
+    /// Maps nodes to labels
     pub vertex_label: LabelMap<NodeIndex>,
+    /// Maps edges to labels
     pub edge_label: LabelMap<EdgeIndex>,
 }
 
 impl PropertyGraph {
+    /// Formats and writes the data of a node/edge (labels and properties)
     fn display_label_prop(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -253,86 +283,8 @@ impl PropertyGraph {
         }
         write!(f, "}}")
     }
-
-    fn build_isomorphic_input(&self) -> DiGraph<IsomorphismData, IsomorphismData> {
-        let mut graph: DiGraph<IsomorphismData, IsomorphismData> =
-            DiGraph::with_capacity(self.graph.node_count(), 0);
-        let mut vertex_map = HashMap::new();
-        self.graph.node_indices().for_each(|index| {
-            let labels: HashSet<String> = self
-                .vertex_label
-                .element_labels(&index)
-                .map(|label| self.vertex_label.get_label(*label).unwrap().clone())
-                .collect();
-            let props = self.graph.node_weight(index).unwrap();
-            vertex_map.insert(index, graph.add_node(Some((&props.map, labels))));
-        });
-        self.graph.edge_indices().for_each(|edge| {
-            let (self_node_from, self_node_to) = self.graph.edge_endpoints(edge).unwrap();
-            let graph_from = *vertex_map.get(&self_node_from).unwrap();
-            let graph_to = *vertex_map.get(&self_node_to).unwrap();
-            let labels: HashSet<String> = self
-                .edge_label
-                .element_labels(&edge)
-                .map(|label| self.edge_label.get_label(*label).unwrap().clone())
-                .collect();
-            let props = self.graph.edge_weight(edge).unwrap();
-            let data = Some((&props.map, labels));
-            if self
-                .graph
-                .edges_connecting(self_node_from, self_node_to)
-                .count()
-                > 1
-            {
-                let inter_node = graph.add_node(None);
-                graph.add_edge(graph_from, inter_node, data);
-                graph.add_edge(inter_node, graph_to, None);
-            } else {
-                graph.add_edge(graph_from, graph_to, data);
-            }
-        });
-        graph
-    }
-
-    pub fn is_isomorphic(&self, other: &PropertyGraph) -> bool {
-        let data_match =
-            |data_left: &IsomorphismData, data_right: &IsomorphismData| data_left == data_right;
-        is_isomorphic_matching(
-            &self.build_isomorphic_input(),
-            &other.build_isomorphic_input(),
-            data_match,
-            data_match,
-        )
-    }
-
-    pub fn check_unique_names(&self) -> bool {
-        let mut names = HashSet::new();
-        for name in self.graph.node_weights().map(|x| &x.name) {
-            if names.contains(&name) {
-                return false;
-            }
-            names.insert(name);
-        }
-        names.clear();
-        for name in self.graph.edge_weights().map(|x| &x.name) {
-            if names.contains(&name) {
-                return false;
-            }
-            names.insert(name);
-        }
-        true
-    }
 }
 
-impl Default for PropertyGraph {
-    fn default() -> Self {
-        Self {
-            graph: Default::default(),
-            vertex_label: Default::default(),
-            edge_label: Default::default(),
-        }
-    }
-}
 
 impl Display for PropertyGraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -368,34 +320,7 @@ impl Display for PropertyGraph {
     }
 }
 
-pub fn generate_key(p: &PropertyGraph) -> String {
-    let mut node_names: Vec<(NodeIndex, Cow<str>)> = p
-        .graph
-        .node_indices()
-        .map(|n| (n, Cow::from(&p.graph.node_weight(n).unwrap().name)))
-        .collect();
-    node_names.sort_by(|(_, name1), (_, name2)| name1.cmp(name2));
-    //TODO check for duplicates
-    let key = node_names
-        .into_iter()
-        .fold(String::new(), |mut buff, (node_id, node_name)| {
-            buff += node_name.as_ref();
-            let mut edges: Vec<Cow<str>> = p
-                .graph
-                .edges_directed(node_id, petgraph::EdgeDirection::Outgoing)
-                .map(|e| Cow::from(&e.weight().name))
-                .collect();
-            if !edges.is_empty() {
-                buff += ":";
-                edges.sort();
-                buff += &edges.join(",");
-            }
-            buff += ";";
-            buff
-        });
-    key
-}
-
+/// Utility function to input the edge data into the hasher
 fn hash_edge<H: std::hash::Hasher>(
     edge_name: Cow<str>,
     from: Cow<str>,
@@ -429,6 +354,7 @@ fn hash_edge<H: std::hash::Hasher>(
     labels.into_iter().for_each(|l| l.hash(state));
 }
 
+/// Utility function to input the node data into the hasher
 fn hash_node<H: std::hash::Hasher>(
     node_name: Cow<str>,
     node_id: NodeIndex,
@@ -467,6 +393,9 @@ fn hash_node<H: std::hash::Hasher>(
     }
 }
 
+/// Generates a unique string from a property graph such that only two identical property graphs
+/// would have the same key. Each node and edge is converted into a sequence of properties that are
+/// sorted alphabetically and hashed. Assumes all type names are unique.
 impl Hash for PropertyGraph {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         let mut node_names: Vec<(NodeIndex, Cow<str>)> = self
@@ -475,7 +404,6 @@ impl Hash for PropertyGraph {
             .map(|n| (n, Cow::from(&self.graph.node_weight(n).unwrap().name)))
             .collect();
         node_names.sort_by(|(_, name1), (_, name2)| name1.cmp(name2));
-        //TODO check for duplicates
         for (node_id, node_name) in node_names.into_iter() {
             hash_node(node_name, node_id, &self, state);
         }
@@ -486,12 +414,7 @@ impl Hash for PropertyGraph {
 mod test {
     use std::{collections::HashSet, iter::FromIterator};
 
-    use std::hash::{DefaultHasher, Hash, Hasher};
-
-    use super::generate_key;
-
     use crate::{
-        parsing::PropertyGraphParser,
         property_graph::{IdManager, LabelMap},
     };
 
@@ -625,74 +548,5 @@ mod test {
         assert!(map.element_labels(&0).next().is_none());
         assert!(map.label_elements(id1).next().is_none());
         assert!(map.label_elements(id2).next().is_none());
-    }
-
-    #[test]
-    fn test_isomorphism() {
-        let parser = PropertyGraphParser;
-        let specs = "create graph type g1 {
-            (n1 : L1),
-            (n2 : L1 & L3),
-            (n3 : L2),
-            (:n1)-[e1 : E1]->(:n2),
-            (:n1)-[e2 : E4]->(:n2),
-            (:n2)-[e3 : E2 & E5]->(:n3)
-        }
-        create graph type g2 {
-            (u3 : L2),
-            (u1 : L1),
-            (u2 : L1 & L3),
-            (:u2)-[f3 : E2 & E5]->(:u3),
-            (:u1)-[f2 : E4]->(:u2),
-            (:u1)-[f1 : E1]->(:u2)
-        }
-        ";
-        let graphs = parser.convert_text(specs);
-        let first_graph = graphs.get(0).unwrap();
-        let second_graph = graphs.get(1).unwrap();
-        assert!(first_graph.is_isomorphic(second_graph));
-        assert!(second_graph.is_isomorphic(first_graph));
-    }
-
-    #[test]
-    fn smoke_test() {
-        let text = "CREATE GRAPH TYPE fraudGraphType {
-( personType : Person { name STRING , birthday DATE }) ,
-( customerType : Person & Customer { name STRING , since DATE }) ,
-( suspiciousType : Suspicious { reason STRING }) ,
-( : customerType )
--[ friendType : Knows & Likes {time INT} ] ->
-( : customerType ),
-( : customerType )
--[ aliasType {frequency INT} ] ->
-( : suspiciousType )
-}";
-        let parser = PropertyGraphParser;
-        let results = parser.convert_text(text);
-        let g = results.get(0).unwrap();
-        let key = generate_key(g);
-        let expected = "customerType:aliasType,friendType;personType;suspiciousType;";
-        assert_eq!(key, expected);
-        let mut h = DefaultHasher::new();
-        g.hash(&mut h);
-        println!("{}", h.finish());
-        let text = "CREATE GRAPH TYPE fraudGraphType {
-( personType : Person { name STRING , birthday DATE }) ,
-( customerType : Person & Customer { name STRING , since DATE }) ,
-( suspiciousType : Suspicious { reason STRING }) ,
-( : customerType )
--[ friendType : Knows & Likes {time INT} ] ->
-( : customerType ),
-( : customerType )
--[ aliasType {frequency INT} ] ->
-( : suspiciousType )
-}";
-        let parser = PropertyGraphParser;
-        let results = parser.convert_text(text);
-        let g = results.get(0).unwrap();
-        let mut h = DefaultHasher::new();
-        g.hash(&mut h);
-        println!("{}", h.finish());
-        // panic!()
     }
 }

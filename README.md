@@ -146,6 +146,58 @@ At the end of a run:
 full concatenated `operations` list.
 - A `TIMINGS` node is inserted with wall-clock measurements for each phase.
 
+## Datalog programs
+
+The `datalog` folder contains two examples of meta-transformations. The
+`persondata.dl.example` example implements two generic meta-transformations. The
+`icij.dl.example` implements more complex meta-transformations for the ICJ
+dataset and displays the use of ids to prevent rules being mixed together after
+evaluation.
+
+Three rules are used:
+- `ConcreteOperation`: Rules to generate each individual edit operation.
+- `Next`: Combines the `Start` and `Next` rules into one for efficiency. Takes
+three parameters: the first edit operation of the transformation (root), the
+last edit operation `e` of the current transformation and the edit operation that
+can follow `e`. This allows having multiple meta-transformations in the same
+program.
+- `NextId`: Equivalent to `Next` but allows for an additional id to
+further differentiate between different meta-transformations.
+
+The reason for this implementation can be illustrated from the example below
+where two meta-transformations are evaluated. The first one produces
+transformations starting with `op1` and the second with `op2`.
+
+Using the `Start` and `Next` normal definitions, two different
+meta-transformations can produce the following result:
+
+```
+Start(op1)
+
+Next(op1, op2)
+Next(op2, op3)
+
+Start(op2)
+Next(op2, op4)
+```
+
+With this version, this allows the invalid transformation `op1, op2,
+op4`. This is invalid because `op4` follows `op2` in the second
+meta-transformation and not in the first.
+
+Using the rooted `Next` definition, this becomes as follow:
+
+```
+Next(op1, op1, op2)
+Next(op1, op2, op3)
+
+Next(op2, op2, op4)
+```
+
+Now, the first meta-transformation can produce the sequence `op1, op2` with root
+`op1` but we cannot follow `op2` by `op4` since this is only allowed if the root
+is `op2`.
+
 ## References
 
 Development happened in TransProof: https://github.com/umons-dept-comp-sci/PhoegTransRust
