@@ -1,7 +1,4 @@
 .include "./definitions.dl"
-//.include "./input.dl"
-
-//TODO: use optional
 
 // Generic
 

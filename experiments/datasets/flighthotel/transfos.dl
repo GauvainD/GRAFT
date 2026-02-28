@@ -1,5 +1,4 @@
 .include "definitions.dl"
-//.include "data.dl"
 
 ConcreteOperation($AddVertex(v)):-
 	!Vertex(v),
