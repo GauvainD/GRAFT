@@ -199,7 +199,6 @@ def run_transrust(params: BenchmarkParams) -> bool:
     binary = GRAFT_PATH / "target" / "release" / "transrust"
     cmd = [
         str(binary),
-        params.dir,
         "--neo4j",
         "--input",
         os.path.join(params.dir, f"{params.source}.pgschema"),
@@ -215,7 +214,7 @@ def run_transrust(params: BenchmarkParams) -> bool:
         str(params.weight),
         "--theta",
         str(params.theta),
-        "rule1",
+        params.dir
     ]
     if params.minshash is not None:
         cmd += ["--minshash", str(params.minshash)]

@@ -1,45 +1,54 @@
-# Experiments
+# Results
 
-The file `make_all_plots.py` produces all plots from the paper in a directory
-`plot`. This directory will be created if it does not already exist.
+The file `make_all_plots.py` produces all plots from the paper in the
+`plots/` directory, which is created automatically if it does not exist.
+Layout constants (figure height, spacing, legend position) are in `params.py`.
 
+## Running
 
-The experiment data is provided in directory `results`. They are in csv format.
-Because computation was performed 5 times, each entry is an array of 5 values.
-`None` indicates a timeout.
+```bash
+python make_all_plots.py
+```
 
-- `index`: Index of each line. Format depends of the experiment.
-- `similarity`: Best similarity reached.
-- `path`: Number of edit operations in the final transformation between source
-and the best schema.
-- `time`: Total computation time in seconds.
-- `souffle_time`: Cumulative time to evaluate the datalog program.
-- `neo4j_time`: Cumulative time to evaluate the compute the meta-graph.
-- `sim_time`: Cumulative time to evaluate the compute the similarity.
-- `gen_time`: Cumulative time to evaluate the compute the schemas from a grounded meta-transformation.
-- `automaton_time`: Cumulative time to build the meta-transformation from
-souffle's results and contract cliques.
-- `transfo_path`: Final sequence of transformations from source to the best
-schema. A special format is used. ";" separates edit operations within a
-transformation and ":" separates transformations in the same sequence. This
-format being large, it was only computed in the
-`cand-schema-comparison-path.csv` file.
+Dependencies: `pandas`, `seaborn`, `matplotlib`, `numpy`.
 
-The files are as follows:
+## Output figures
 
-- `cand-schema-comparison.csv`: Measures when varying the number of
-candidate schemas without storing the sequences of transformations.
-- `cand-schema-comparison-path.csv`: Measures when varying the number of
-candidate schemas. Does not contain the `naive` strategy since results are
-identical to `greedy` and it takes much longer.
-- `dataset-comparison.csv`: Comparison between different datasets.
-- `schema-size-comparison.csv`: Evolution of results when artificially
-increasing the size of schemas.
-- `similarities.csv`: Similarity between each source and target schema pairs.
-The `inserted` column refers to the number of random nodes inserted. When
-`inserted`=0, this is the original source schema.
-- `similarity-comparison.csv`: Comparison of results when using increasing
-number of samples for the Minhash similarity. A value of `None` for the sample
-size means the full Jaccard index was used.
-- `theta-comparison.csv`: Comparison of results when varying the parameter
-`theta`.
+| File | Contents |
+|---|---|
+| `plots/figure6.pdf` | Similarity improvement, runtime, and edit-op count vs. number of candidate schemas, per dataset and strategy |
+| `plots/figure7.pdf` | Average transformation size vs. candidate schemas; similarity and runtime vs. schema size (added nodes) |
+| `plots/figure8.pdf` | Dataset comparison, theta (θ) sensitivity, and MinHash sample size sensitivity |
+| `plots/figure9.pdf` | Stacked-bar breakdown of runtime phases (greedy strategy) |
+
+## CSV data (`csv/`)
+
+Each CSV records measurements over 5 repeated runs, so numeric columns are
+arrays of 5 values. `None` indicates a timeout.
+
+### Common columns
+
+| Column | Description |
+|---|---|
+| `index` | Row identifier; format depends on the experiment |
+| `similarity` | Best similarity reached |
+| `path` | Number of edit operations in the final transformation |
+| `time` | Total computation time (s) |
+| `souffle_time` | Cumulative time to evaluate the Datalog program |
+| `neo4j_time` | Cumulative time to compute the meta-graph |
+| `sim_time` | Cumulative time to compute similarity |
+| `gen_time` | Cumulative time to generate schemas from a grounded meta-transformation |
+| `automaton_time` | Cumulative time to build the meta-transformation automaton and contract cliques |
+| `transfo_path` | Final transformation sequence (`";"` separates edit operations within a transformation, `":"` separates transformations in a sequence) |
+
+### Files
+
+| File | Used in | Description |
+|---|---|---|
+| `cand-schema-comparison.csv` | Figure 6, Figure 7 | Varying number of candidate schemas; `transfo_path` not stored |
+| `cand-schema-comparison-path.csv` | Figure 7 | Same experiment with `transfo_path` stored; excludes `naive` (identical to `greedy`, much slower) |
+| `dataset-comparison.csv` | Figure 8, Figure 9 | Comparison across all four datasets |
+| `schema-size-comparison.csv` | Figure 7 | Results when artificially increasing schema size by inserting random nodes |
+| `similarities.csv` | Figures 6–8 (baseline) | Jaccard similarity between each source/target pair; `inserted` = number of random nodes added (0 = original) |
+| `similarity-comparison.csv` | Figure 8 | Varying MinHash sample size; `None` = exact Jaccard |
+| `theta-comparison.csv` | Figure 8 | Varying the minimum similarity threshold θ |

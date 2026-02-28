@@ -22,7 +22,7 @@ Below is a description of the different directories and files in the repository.
 - `datalog`: Put your `.dl` files here.
 - `datalog_compiled`: Contains the compiled Datalog programs.
 - `examples`: Various example schemas.
-- `experiments`: Datasets used for the experiments in the paper.
+- `experiments`: Datasets used for the experiments in the paper as well as results.
 - `src`: Source code.
 
 ## Requirements
@@ -148,4 +148,4 @@ full concatenated `operations` list.
 
 ## References
 
-Initial development came from TransProof: https://github.com/umons-dept-comp-sci/PhoegTransRust
+Development happened in TransProof: https://github.com/umons-dept-comp-sci/PhoegTransRust
