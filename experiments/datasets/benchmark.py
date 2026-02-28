@@ -10,7 +10,7 @@ from typing import Any, Optional
 
 import neo4j
 
-GRAFT_PATH = Path("../")
+GRAFT_PATH = Path("../../")
 NEO4J_URI = "neo4j://localhost"
 TIMEOUT = 600
 OVERWRITE = False
