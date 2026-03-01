@@ -1,3 +1,10 @@
+//! This module contains the computation logic. [`handle_graph`] takes a single
+//! source schema, drives the Souffle program to build an operation automaton, iterates over all
+//! reachable transformation sequences in parallel, scores each result against the optional target
+//! schema, and emits the best-N candidates to a channel. [`handle_graphs`] fans out over a
+//! vector of schemas using `rayon`. The aggregate thread functions ([`output`] and
+//! [`output_neo4j`]) read from the channel and write results to a file or Neo4j respectively.
+
 use crate::constants::{GEN_TIME, MINHASH, NEO4J_TIME, NUM_BEST, SIM_TIME};
 use crate::errors::*;
 use crate::graph_transformation::GraphTransformation;
@@ -20,7 +27,8 @@ use std::time::{Duration, Instant};
 
 use self::souffle::{create_program_instance, Program};
 
-/// Precision of the comparison
+/// Epsilon used for floating-point similarity comparisons (two values closer than this are
+/// considered equal when ordering [`SimGraph`] entries in the best-N heap).
 const EPS: f64 = 1e-12;
 
 /// Stores a GraphTransformation along with the similarity of its result to the target and a unique
@@ -299,6 +307,7 @@ impl<T> From<Sender<T>> for SenderVariant<T>
 where
     T: Send,
 {
+    /// Wraps an unbounded [`Sender`] as an [`SenderVariant::UnlimitedSender`].
     fn from(sender: Sender<T>) -> Self {
         SenderVariant::UnlimitedSender(sender)
     }
@@ -308,6 +317,7 @@ impl<T> From<SyncSender<T>> for SenderVariant<T>
 where
     T: Send,
 {
+    /// Wraps a bounded [`SyncSender`] as a [`SenderVariant::LimitedSender`].
     fn from(sender: SyncSender<T>) -> Self {
         SenderVariant::LimitedSender(sender)
     }

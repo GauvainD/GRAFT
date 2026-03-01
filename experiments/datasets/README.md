@@ -24,7 +24,7 @@ and target schemas that were augmented by adding `x` random nodes for files
 
 ## Running the benchmark
 
-The `benchmark.py` script runs `transrust` over a set of parameter
+The `benchmark.py` script runs `graft` over a set of parameter
 combinations, collects timing and similarity results, caches them in a
 [shelve](https://docs.python.org/3/library/shelve.html) file, and writes a
 summary CSV.

@@ -15,7 +15,7 @@ pub static PATH_WEIGHT: OnceLock<f64> = OnceLock::new();
 /// Are edit operations idempotent?
 pub static IDEMPOTENCE: OnceLock<bool> = OnceLock::new();
 
-/// These are accumulators for timings and measurments
+// These are accumulators for timings and measurments
 lazy_static! {
     /// Total runtime
     pub static ref TOTAL_TIME: Arc<Mutex<Duration>> = Arc::new(Mutex::new(Duration::default()));

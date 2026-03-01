@@ -1,5 +1,5 @@
 [package]
-name = "transrust"
+name = "graft"
 version = "1.0.0-alpha"
 authors = ["Gauvain Devillez <gauvain.devillez@umons.ac.be>"]
 edition = "2021"
@@ -27,6 +27,10 @@ cxx-build = "1.0.119"
 
 [lib]
 name = "transproof"
+
+[[bin]]
+name = "graft"
+path = "src/main.rs"
 
 [[bin]]
 name = "add_nodes_random"

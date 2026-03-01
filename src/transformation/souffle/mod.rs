@@ -1,5 +1,14 @@
-//! This module is the low-level integration between souffle and Graft.
-//! It uses FFI to interface with souffle produced C++ code.
+//! Low-level FFI integration between Souffle and GRAFT.
+//!
+//! The strategy is:
+//! 1. A Souffle program (compiled from a `.dl` file by the build script) is instantiated via
+//!    [`create_program_instance`].
+//! 2. The input schema and optional target schema are **encoded** into Souffle relations using
+//!    [`encode_input_graph`] / [`encode_target_graph`].
+//! 3. The program is run; Souffle derives the `Next` / `NextId` output relations.
+//! 4. [`generate_graph`] reads those output tuples back through the record/symbol tables and
+//!    reconstructs a [`crate::transformation_automaton::TransformationAutomaton`] that is then
+//!    used to iterate over valid transformation sequences.
 
 use std::{
     collections::{HashMap, HashSet, VecDeque},
@@ -34,9 +43,11 @@ use super::{name_from_order, Operation, OperationName};
 
 mod souffle_ffi;
 
+/// Raw pointer to a Souffle program instance (opaque C++ object).
 pub type Program = *mut souffle_ffi::SouffleProgram;
 type Relation = *mut souffle_ffi::Relation;
 type InputTuple = UniquePtr<souffle_ffi::tuple>;
+/// Raw pointer to an immutable Souffle output tuple (used when iterating relation results).
 pub type OutputTuple = *const souffle_ffi::tuple;
 
 /// Helper struct to avoid duplication for source and target schema
@@ -63,7 +74,7 @@ pub const INPUT_RELATION_NAMES: RelationNames<'static> = RelationNames {
     edge_property: "EdgeProperty",
 };
 
-/// same with target relation names
+/// Names of the Souffle relations encoding the *target* schema (used for similarity-guided Datalog rules).
 pub const TARGET_RELATION_NAMES: RelationNames<'static> = RelationNames {
     vertex_label: "TargetVertexLabel",
     vertex: "TargetVertex",
@@ -272,7 +283,7 @@ pub fn encode_input_graph(program: Program, graph: &PropertyGraph) {
     encode_graph(program, graph, &INPUT_RELATION_NAMES);
 }
 
-/// Serializes the input schema into a Souffle program
+/// Serializes the target schema into a Souffle program
 pub fn encode_target_graph(program: Program, graph: &PropertyGraph) {
     encode_graph(program, graph, &TARGET_RELATION_NAMES);
 }
@@ -386,7 +397,13 @@ impl Operation {
     }
 }
 
-/// Generates a transformation automaton from a Souffle program after it finished running.
+/// Reads the `Next` / `NextId` output relations from a *finished* Souffle program and builds
+/// a [`TransformationAutomaton`].
+///
+/// # Safety
+/// `program` must be a valid, non-null pointer returned by [`create_program_instance`] and the
+/// program must have already been run (via `souffle_ffi::runProgram`).  The caller retains
+/// ownership of the pointer; this function does not free it.
 unsafe fn generate_graph(program: Program) -> Option<TransformationAutomaton> {
     let record = getRecordTable(&program);
     let symbol = getSymbolTable(&program);

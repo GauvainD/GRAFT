@@ -58,12 +58,12 @@ The `<program>` argument is the name of your Datalog file without the `.dl` exte
 
 ```
 Transrust is a tool to compute the results of different transformations on a given set of graphs.
-These graphs have to be given in graph6 format from the input (one signature per line) and the
-result is outputed in csv format.
+Input schemas are read in PGSchema format (one or more schemas per file). Results are written in
+PGSchema format, with source and result schemas separated by ===.
 
 Usage:
-    transrust [options] <program>
-    transrust (-h | --help)
+    graft [options] <program>
+    graft (-h | --help)
 
 Options:
     -h, --help             Show this message.
@@ -102,7 +102,7 @@ Without `--neo4j`, one round of transformations is performed and results are
 written to stdout or a file:
 
 ```sh
-transrust -i input.pgschema --target target.pgschema -p 6 myprogram
+graft -i input.pgschema --target target.pgschema -p 6 myprogram
 ```
 
 ### Neo4j mode
@@ -113,7 +113,7 @@ again, until the similarity threshold (`--theta`) is reached or `--turns` rounds
 pass without enough improvement.
 
 ```sh
-transrust --neo4j --target target.pgschema --strat greedy \
+graft --neo4j --target target.pgschema --strat greedy \
           --neo4j-uri bolt://localhost:7687 myprogram
 ```
 
@@ -124,7 +124,7 @@ or unrelated schemas will interfere with the search.
 
 Input schemas are expected to be using the PGSchema format. See
 `./src/parsing/PropertyGraph.pest` for reference. In single-run mode, schemas
-are outputed in pairs of source/result, separated by `===`. The schemas are in
+are written in pairs of source/result, separated by `===`. The schemas are in
 PGSchema format.
 
 ## Retrieving results from Neo4j

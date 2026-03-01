@@ -48,6 +48,7 @@ pub struct TransformationAutomaton {
 }
 
 impl TransformationAutomaton {
+    /// Creates an empty automaton with no nodes, edges, or start states.
     pub fn new() -> Self {
         TransformationAutomaton {
             start: Vec::new(),
@@ -134,7 +135,9 @@ fn to_undirected(
     (new_graph, node_map)
 }
 
-/// Detects cliques and contracts them into a single artificial edit operation.
+/// Detects maximal cliques of mutually-commutative edit operations and contracts each clique into
+/// a single synthetic automaton node whose [`AutomatonNode::group`] field lists the constituent
+/// operations. The contracted node is then expanded by a [`SubsetGenerator`] at iteration time.
 pub fn contract_graph(g: &mut TransformationAutomaton) {
     let (undirected, node_map) = to_undirected(g);
     let cliques = petgraph::algo::maximal_cliques(&undirected);
@@ -202,6 +205,8 @@ pub struct SubsetGenerator {
 }
 
 impl SubsetGenerator {
+    /// Creates a generator that will yield every non-empty subset of `list` applied in order to
+    /// `base`, minimising the number of re-applications between consecutive subsets.
     pub fn new(list: Vec<Operation>, base: GraphTransformation) -> Self {
         let mut indices = vec![0; list.len()];
         SubsetGenerator {
@@ -279,6 +284,8 @@ pub struct TransformGeneratorGraph {
 }
 
 impl TransformGeneratorGraph {
+    /// Wraps `automaton` and `g` into an iterator that performs a DFS over all valid
+    /// transformation sequences, yielding each intermediate and final [`GraphTransformation`].
     pub fn new(automaton: TransformationAutomaton, g: &PropertyGraph) -> Self {
         for edge in automaton.graph.edge_references() {
             let src = automaton.graph[edge.source()].clone();

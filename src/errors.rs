@@ -16,10 +16,10 @@ pub enum TransProofError {
     /// Error for inter-thread communication
     #[error(transparent)]
     Send(#[from] mpsc::SendError<LogInfo>),
-    /// Error from dat handling thread
+    /// Error from data handling thread
     #[error("Data handling thread panicked.")]
     Thread(Box<dyn Any + Send>),
-    /// Error when building thread poll
+    /// Error when building thread pool
     #[error(transparent)]
     ThreadPool(#[from] rayon::ThreadPoolBuildError),
     /// Error for transformations

@@ -1,4 +1,10 @@
-//! Structures used to interact with edit operations.
+//! Edit operation types shared between the Souffle FFI and the graph transformation engine.
+//!
+//! This module defines:
+//! - [`OperationName`] — a lightweight, argument-free tag identifying which kind of operation is
+//!   being described (used in the automaton before arguments are known).
+//! - [`Operation`] — the full, argument-carrying enum that is applied to a [`crate::property_graph::PropertyGraph`].
+//! - [`souffle`] — the low-level FFI bridge that drives compiled Souffle programs.
 
 use crate::graph_transformation::GraphTransformation;
 use crate::property_graph::PropertyGraph;
@@ -10,26 +16,47 @@ use std::hash::Hash;
 
 use self::souffle::Program;
 
+/// Low-level FFI bridge to compiled Souffle programs.
 pub mod souffle;
 
-/// Used to represent the name of an edit operation without having its arguments yet.
+/// Argument-free tag identifying which kind of edit operation is being described.
+///
+/// `OperationName` is cheaper to store and compare than a full [`Operation`] because it carries
+/// no `String` arguments. It is used inside the automaton to detect commutative pairs and to
+/// decode Souffle record indices before argument strings are available.
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub enum OperationName {
+    /// Add a label declaration for a vertex type.
     AddVertexLabel,
+    /// Remove a label declaration from a vertex type.
     RemoveVertexLabel,
+    /// Add a label declaration for an edge type.
     AddEdgeLabel,
+    /// Remove a label declaration from an edge type.
     RemoveEdgeLabel,
+    /// Add a new vertex type to the schema.
     AddVertex,
+    /// Remove an existing vertex type from the schema.
     RemoveVertex,
+    /// Add a new edge type between two vertex types.
     AddEdge,
+    /// Remove an existing edge type from the schema.
     RemoveEdge,
+    /// Add a property key to a vertex type.
     AddVertexProperty,
+    /// Remove a property key from a vertex type.
     RemoveVertexProperty,
+    /// Add a property key to an edge type.
     AddEdgeProperty,
+    /// Remove a property key from an edge type.
     RemoveEdgeProperty,
+    /// Rename a vertex type.
     RenameVertex,
+    /// Rename an edge type.
     RenameEdge,
+    /// Move an edge type's target endpoint to a different vertex type.
     MoveEdgeTarget,
+    /// Move an edge type's source endpoint to a different vertex type.
     MoveEdgeSource,
 }
 
@@ -57,7 +84,7 @@ impl From<Operation> for OperationName {
 }
 
 impl OperationName {
-    /// Returns the the name of the operation as a string
+    /// Returns the name of the operation as a string
     fn symbol<'a>(&'a self) -> &'a str {
         match self {
             OperationName::AddEdge => "AddEdge",
@@ -137,24 +164,43 @@ fn name_from_order(v: i32) -> Option<OperationName> {
     }
 }
 
-/// Represents an edit operation
+/// A fully-instantiated edit operation that can be applied to a property graph schema.
+///
+/// Each variant carries the name(s) of the affected schema element(s) as `String` arguments.
+/// The argument order follows the pattern used in the Souffle Datalog definitions.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Operation {
+    /// `(vertex_name, label_name)` — assign a label to a vertex type.
     AddVertexLabel(String, String),
+    /// `(vertex_name, label_name)` — remove a label from a vertex type.
     RemoveVertexLabel(String, String),
+    /// `(edge_name, label_name)` — assign a label to an edge type.
     AddEdgeLabel(String, String),
+    /// `(edge_name, label_name)` — remove a label from an edge type.
     RemoveEdgeLabel(String, String),
+    /// `(vertex_name)` — introduce a new vertex type.
     AddVertex(String),
+    /// `(vertex_name)` — delete an existing vertex type.
     RemoveVertex(String),
+    /// `(edge_name, source_vertex_name, target_vertex_name)` — introduce a new edge type.
     AddEdge(String, String, String),
+    /// `(edge_name)` — delete an existing edge type.
     RemoveEdge(String),
+    /// `(vertex_name, property_key, property_value)` — add a property to a vertex type.
     AddVertexProperty(String, String, String),
+    /// `(vertex_name, property_key)` — remove a property from a vertex type.
     RemoveVertexProperty(String, String),
+    /// `(edge_name, property_key, property_value)` — add a property to an edge type.
     AddEdgeProperty(String, String, String),
+    /// `(edge_name, property_key)` — remove a property from an edge type.
     RemoveEdgeProperty(String, String),
+    /// `(old_name, new_name)` — rename a vertex type.
     RenameVertex(String, String),
+    /// `(old_name, new_name)` — rename an edge type.
     RenameEdge(String, String),
+    /// `(edge_name, new_target_vertex_name)` — redirect an edge type's target endpoint.
     MoveEdgeTarget(String, String),
+    /// `(edge_name, new_source_vertex_name)` — redirect an edge type's source endpoint.
     MoveEdgeSource(String, String),
 }
 

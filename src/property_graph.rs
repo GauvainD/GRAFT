@@ -236,7 +236,9 @@ where
 /// Properties of a node or edge. Contains its name and its properties
 #[derive(Debug, Clone)]
 pub struct Properties {
+    /// The schema-level name of this vertex or edge type (e.g. `"Person"` or `"KNOWS"`).
     pub name: String,
+    /// Key–value property pairs attached to this element (e.g. `{"age" => "integer"}`).
     pub map: HashMap<String, String>,
 }
 

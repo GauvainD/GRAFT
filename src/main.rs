@@ -1,3 +1,15 @@
+//! GRAFT binary entry point.
+//!
+//! Parses CLI arguments (via `docopt`), initialises global constants, reads the input PGSchema
+//! file(s) or pulls schemas from Neo4j, then runs the transformation pipeline in a loop:
+//!
+//! * **Single-run mode** (default): one round of transformations, results written to stdout or a
+//!   file via [`transproof::compute::output`].
+//! * **Neo4j mode** (`--neo4j`): each round's results are stored in Neo4j via
+//!   [`transproof::compute::output_neo4j`]; the loop continues, re-selecting the most promising
+//!   schemas with the chosen strategy, until the similarity threshold (`--theta`) is reached or
+//!   `--turns` rounds pass without sufficient improvement.
+
 use docopt::Docopt;
 use log::{debug, error, info};
 use neo4j::add_label;
@@ -23,8 +35,8 @@ These graphs have to be given in graph6 format from the input (one signature per
 result is outputed in csv format.
 
 Usage:
-    transrust [options] <program>
-    transrust (-h | --help)
+    graft [options] <program>
+    graft (-h | --help)
 
 Options:
     -h, --help             Show this message.

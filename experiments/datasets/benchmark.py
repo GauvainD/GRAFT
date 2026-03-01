@@ -185,7 +185,7 @@ def build(dir_name: str) -> None:
         raise RuntimeError(f"Could not copy datalog file {src}: {exc}") from exc
     env = {**os.environ, "BUILD_ENABLED": "1"}
     sp.run(
-        ["cargo", "build", "--release", "--bin", "transrust"],
+        ["cargo", "build", "--release", "--bin", "graft"],
         cwd=GRAFT_PATH,
         env=env,
         check=True,
@@ -196,7 +196,7 @@ def build(dir_name: str) -> None:
 
 def run_transrust(params: BenchmarkParams) -> bool:
     """Return True on success, False on timeout."""
-    binary = GRAFT_PATH / "target" / "release" / "transrust"
+    binary = GRAFT_PATH / "target" / "release" / "graft"
     cmd = [
         str(binary),
         "--neo4j",
