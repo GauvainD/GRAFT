@@ -212,9 +212,7 @@ def load_increasing_dataset():
     )
     for col in cols:
         increasing[col] = increasing[col].str.findall(r"(\d+(?:\.\d+)?|None)")
-    increasing = increasing.explode(
-        cols[:3] + cols[4:]
-    )  # FIXME: it fails for souffle_time?
+    increasing = increasing.explode(cols)
     increasing["run_id"] = increasing.groupby(
         level=["dataset", "strat", "inserted"]
     ).cumcount()
