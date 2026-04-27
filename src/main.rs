@@ -56,7 +56,7 @@ Options:
     --neo4j                Writes the output in a Neo4j database and proceed to multiple loops. Incompatible with -o.
     -l, --label <label>    Reads graphs from metanodes in Neo4j database having the given label. Incompatible with -i.
     --target <target>      File containing the target schema.
-    -p, --prune <prune>    Number of best results to keep. [default: 6]
+    -p, --prune <prune>    Number of best results to keep. Set to 0 to keep all of them. [default: 6]
     --strat <strategy>     Strategy to use for the computation. Available strategies are: naive, random, weighted_distance and greedy. [default: greedy]
     -w, --weight <weight>  Weight to give to the distance in the weighted distance strategy. Must be between 0 and 1. [default: 0.5]
     --minshash <sample>    Use minhash similarity with the given sample size instead of default jaccard index. [default: 200]

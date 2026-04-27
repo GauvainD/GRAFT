@@ -98,22 +98,22 @@ pub fn handle_graph(
             // If we have a target, we can compute similarity and prune the number of results.
             // Otherwise, each result is directly sent into the channel.
             if let Some(target) = target_graph.as_ref() {
-                if !stored.contains(&key) {
+                start = Instant::now();
+                let sim = if let Some(sample) = *MINHASH.get().unwrap() {
+                    let target_hash = target_graph
+                        .as_ref()
+                        .map(|g| property_graph_minhash(&g, sample))
+                        .unwrap();
+                    let g_hash = property_graph_minhash(&h.result, sample);
+                    compute_probminhash_jaccard(&target_hash, &g_hash)
+                } else {
+                    jaccard_index(&h.result, target)
+                };
+                {
+                    *SIM_TIME.lock().unwrap() += start.elapsed();
+                }
+                if *num_bests > 0 && !stored.contains(&key) {
                     stored.insert(key);
-                    start = Instant::now();
-                    let sim = if let Some(sample) = *MINHASH.get().unwrap() {
-                        let target_hash = target_graph
-                            .as_ref()
-                            .map(|g| property_graph_minhash(&g, sample))
-                            .unwrap();
-                        let g_hash = property_graph_minhash(&h.result, sample);
-                        compute_probminhash_jaccard(&target_hash, &g_hash)
-                    } else {
-                        jaccard_index(&h.result, target)
-                    };
-                    {
-                        *SIM_TIME.lock().unwrap() += start.elapsed();
-                    }
                     // In order to only keep the num_bests most similar, we insert each result into
                     // the heap and remove the least similar if we have too many.
                     bests.push(SimGraph(sim, key, h));
@@ -121,6 +121,8 @@ pub fn handle_graph(
                         let removed = bests.pop().unwrap();
                         stored.remove(&removed.1);
                     }
+                } else if *num_bests == 0 {
+                    t.send(LogInfo::TransfoSim(SimGraph(sim, key, h), "".to_string()))?;
                 }
             } else {
                 t.send(LogInfo::Transfo(h, "".to_string()))?;
@@ -128,8 +130,10 @@ pub fn handle_graph(
             start = Instant::now();
         }
     }
-    for transfo in bests {
-        t.send(LogInfo::TransfoSim(transfo, "".to_string()))?;
+    if *num_bests > 0 {
+        for transfo in bests {
+            t.send(LogInfo::TransfoSim(transfo, "".to_string()))?;
+        }
     }
     Ok(())
 }
