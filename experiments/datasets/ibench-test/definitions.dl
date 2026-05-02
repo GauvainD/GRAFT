@@ -1,0 +1,121 @@
+// Source schema
+
+.decl Vertex(name:symbol)
+
+
+
+
+.decl VertexLabel(name:symbol)
+
+
+
+
+.decl VertexHasLabel(elem:symbol, label:symbol)
+
+
+
+
+.decl VertexProperty(name:symbol, pname: symbol, value: symbol)
+
+
+
+
+.decl EdgeProperty(name:symbol, pname: symbol, value: symbol)
+
+
+
+
+.decl Edge(name:symbol, from:symbol, to:symbol)
+
+
+
+
+.decl EdgeLabel(name:symbol)
+
+
+
+
+.decl EdgeHasLabel(elem:symbol, label:symbol)
+
+
+
+
+// Target schema
+
+.decl TargetVertex(name:symbol)
+
+
+
+
+.decl TargetVertexLabel(name:symbol)
+
+
+
+
+.decl TargetVertexHasLabel(elem:symbol, label:symbol)
+
+
+
+
+.decl TargetVertexProperty(name:symbol, pname: symbol, value: symbol)
+
+
+
+
+.decl TargetEdgeProperty(name:symbol, pname: symbol, value: symbol)
+
+
+
+
+.decl TargetEdge(name:symbol, from:symbol, to:symbol)
+
+
+
+
+.decl TargetEdgeLabel(name:symbol)
+
+
+
+
+.decl TargetEdgeHasLabel(elem:symbol, label:symbol)
+
+
+
+
+// Transformations
+
+.decl Transformation(name:symbol)
+
+.output Transformation(IO=stdout)
+
+
+.decl Next(root: Operation, previous: Operation, next: Operation)
+
+.output Next(IO=stdout)
+
+
+.decl NextId(id: symbol, root: Operation, previous: Operation, next: Operation)
+
+.output NextId(IO=stdout)
+
+
+.type Operation = AddVertexLabel{vertex: symbol, label: symbol}
+                | RemoveVertexLabel{vertex: symbol, label: symbol}
+                | AddEdgeLabel{edge: symbol, label: symbol}
+                | RemoveEdgeLabel{edge: symbol, label: symbol}
+                | AddVertex{vertex: symbol}
+                | RemoveVertex{vertex: symbol}
+                | AddEdge{edge: symbol, from: symbol, to: symbol}
+                | RemoveEdge{edge: symbol}
+                | AddVertexProperty{vertex: symbol, property: symbol, type: symbol}
+                | RemoveVertexProperty{vertex: symbol, property: symbol}
+                | AddEdgeProperty{edge: symbol, property: symbol, type: symbol}
+                | RemoveEdgeProperty{edge: symbol, property: symbol}
+                | RenameVertex{vertex: symbol, name: symbol}
+                | RenameEdge{edge: symbol, name: symbol}
+                | MoveEdgeTarget{edge: symbol, target: symbol}
+                | MoveEdgeSource{edge: symbol, source: symbol}
+
+.decl ConcreteOperation(op: Operation)
+
+.output ConcreteOperation(IO=stdout)

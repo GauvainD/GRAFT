@@ -1,0 +1,37 @@
+Vertex("test_cp_0_nl0_ce0").
+Vertex("measure_me_0_nl0_ce0").
+Vertex("cheese_me_0_nl0_ce1").
+Vertex("demand_vp_0_nl0_ce0").
+Vertex("tail_ad_0_nl0_ce0").
+Vertex("blue_dl_0_nl0_ce0").
+VertexProperty("test_cp_0_nl0_ce0", "nut_cp_0_nl0_ae0ke0", "TEXT").
+VertexProperty("test_cp_0_nl0_ce0", "art_cp_0_nl0_ae1", "TEXT").
+VertexProperty("measure_me_0_nl0_ce0", "touch_me_0_nl0_ae0", "TEXT").
+VertexProperty("cheese_me_0_nl0_ce1", "society_me_0_nl1_ae0", "TEXT").
+VertexProperty("cheese_me_0_nl0_ce1", "slope_me_0_nl0_ae0comp1_joinattr_0", "TEXT").
+VertexProperty("demand_vp_0_nl0_ce0", "great_vp_0_nl0_ae0ke0", "TEXT").
+VertexProperty("demand_vp_0_nl0_ce0", "affect_vp_0_nl0_ae1", "TEXT").
+VertexProperty("tail_ad_0_nl0_ce0", "past_ad_0_nl0_ae1", "TEXT").
+VertexProperty("tail_ad_0_nl0_ce0", "red_ad_0_nl0_ae0ke0", "TEXT").
+VertexProperty("blue_dl_0_nl0_ce0", "describe_dl_0_nl0_ae0ke0", "TEXT").
+VertexProperty("blue_dl_0_nl0_ce0", "night_dl_0_nl0_ae1", "TEXT").
+Edge("slope_me_0_nl0_ae0comp1_joinref_0", "measure_me_0_nl0_ce0", "cheese_me_0_nl0_ce1").
+TargetVertex("test_cp_0_nl0_ce0").
+TargetVertex("compare_me_0_nl0_ce0").
+TargetVertex("society_vp_0_nl0_ce0").
+TargetVertex("warn_vp_0_nl0_ce1").
+TargetVertex("tail_ad_0_nl0_ce0").
+TargetVertex("blue_dl_0_nl0_ce0").
+TargetVertexProperty("test_cp_0_nl0_ce0", "nut_cp_0_nl0_ae0ke0", "TEXT").
+TargetVertexProperty("test_cp_0_nl0_ce0", "art_cp_0_nl0_ae1", "TEXT").
+TargetVertexProperty("compare_me_0_nl0_ce0", "slope_me_0_nl0_ae0comp1_joinattr_0", "TEXT").
+TargetVertexProperty("compare_me_0_nl0_ce0", "touch_me_0_nl0_ae0", "TEXT").
+TargetVertexProperty("compare_me_0_nl0_ce0", "society_me_0_nl1_ae0", "TEXT").
+TargetVertexProperty("society_vp_0_nl0_ce0", "great_vp_0_nl0_ae0ke0", "TEXT").
+TargetVertexProperty("warn_vp_0_nl0_ce1", "affect_vp_0_nl0_ae1", "TEXT").
+TargetVertexProperty("tail_ad_0_nl0_ce0", "past_ad_0_nl0_ae1", "TEXT").
+TargetVertexProperty("tail_ad_0_nl0_ce0", "red_ad_0_nl0_ae0ke0", "TEXT").
+TargetVertexProperty("tail_ad_0_nl0_ce0", "work_ad_0_nl0_ae2", "TEXT").
+TargetVertexProperty("tail_ad_0_nl0_ce0", "letter_ad_0_nl0_ae3", "TEXT").
+TargetVertexProperty("blue_dl_0_nl0_ce0", "describe_dl_0_nl0_ae0ke0", "TEXT").
+TargetEdge("different_vp_0_nl0_ae0joinattrref", "warn_vp_0_nl0_ce1", "society_vp_0_nl0_ce0").

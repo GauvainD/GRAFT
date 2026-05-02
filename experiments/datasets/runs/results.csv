@@ -1,0 +1,2 @@
+"index","similarity","path","time","souffle_time","neo4j_time","sim_time","gen_time","automaton_time","num_dup","num_tot"
+"persondata-greedy-10","[0.7]","[13]","[0.514317875]","[0.000122571]","[0.466119746]","[0.007903212]","[0.001031503]","[0.00023682]","[29]","[60]"

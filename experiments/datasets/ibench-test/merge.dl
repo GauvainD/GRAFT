@@ -1,0 +1,149 @@
+.decl node_s(n: symbol)
+
+.decl prop_s(n: symbol, p: symbol)
+
+.decl node_t(n: symbol)
+
+.decl prop_t(n: symbol, p: symbol)
+
+.type Operation = Newnode{n: symbol}
+                | Delnode{n: symbol}
+                | Addprop{n: symbol, p: symbol}
+                | Delprop{n: symbol, p: symbol}
+
+.decl Valid(o: Operation)
+.output Valid(IO=stdout)
+
+.decl Next(r: Operation, p: Operation, n: Operation)
+.output Next(IO=stdout)
+
+node_s("orig1").
+node_s("orig2").
+
+prop_s("orig1", "p1").
+prop_s("orig1", "p2").
+prop_s("orig2", "p3").
+prop_s("orig2", "p4").
+
+node_t("final").
+
+prop_t("final", "p1").
+prop_t("final", "p2").
+prop_t("final", "p3").
+prop_t("final", "p4").
+
+node_s("other").
+prop_s("other", "p").
+
+node_t("other_t").
+prop_t("other", "p_t").
+
+.decl is_merge(orig1: symbol, orig2: symbol, final: symbol)
+
+is_merge(n1, n2, f):-
+    node_s(n1),
+    !node_t(n1),
+    node_s(n2),
+    !node_t(n2),
+    node_t(f),
+    !node_s(f),
+    prop_s(n1, p1),
+    prop_s(n2, p2),
+    prop_t(f, p1),
+    prop_t(f, p2),
+    p1 != p2,
+    n1 != n2,
+    n1 != f,
+    n2 != f.
+
+Valid($Newnode(n)):-
+    is_merge(_, _, n).
+
+Valid($Delnode(n)):-
+    is_merge(n, _, _).
+
+Valid($Delnode(n)):-
+    is_merge(_, n, _).
+
+Valid($Delprop(n, p)):-
+    is_merge(n, _, f),
+    prop_s(n, p),
+    prop_t(f, p).
+
+Valid($Delprop(n, p)):-
+    is_merge(_, n, f),
+    prop_s(n, p),
+    prop_t(f, p).
+
+Valid($Addprop(n, p)):-
+    is_merge(x, _, n),
+    prop_s(x, p),
+    prop_t(n, p).
+
+Next($Newnode(f), $Newnode(f), $Addprop(f, p)):-
+    is_merge(n, _, f),
+    prop_s(n, p),
+    prop_t(f, p),
+    Valid($Newnode(f)),
+    Valid($Addprop(f, p)).
+
+Next($Newnode(f), $Addprop(f, p1), $Addprop(f, p2)):-
+    is_merge(n, _, f),
+    prop_s(n, p),
+    prop_t(l, p),
+    p1 != p2,
+    Valid($Addprop(f, p2)),
+    Next($Newnode(f), _, $Addprop(f, p1)).
+
+Next($Newnode(f), $Addprop(f, p), $Delnode(n)):-
+    is_merge(n, _, f),
+    Valid($Delnode(n)),
+    prop_s(n, p),
+    Next($Newnode(f), _, $Addprop(f, p)).
+
+Next($Newnode(f), $Delnode(n1), $Addprop(f, p)):-
+    is_merge(n1, n2, f),
+    prop_s(n2, p),
+    Valid($Addprop(f, p)),
+    Next($Newnode(f), _, $Delnode(n1)).
+
+Next($Newnode(f), $Addprop(f, p1), $Addprop(f, p2)):-
+    is_merge(_, n, f),
+    prop_s(n, p),
+    prop_t(l, p),
+    p1 != p2,
+    Valid($Addprop(f, p2)),
+    Next($Newnode(f), _, $Addprop(f, p1)).
+
+Next($Newnode(f), $Addprop(f, p), $Delnode(n)):-
+    is_merge(_, n, f),
+    Valid($Delnode(n)),
+    prop_s(n, p),
+    Next($Newnode(f), _, $Addprop(f, p)).
+
+/*
+Next($Newnode(l), $Addprop(l, p1), $Addprop(l, p2)):-
+    is_split(n, l, _),
+    prop_t(l, p1),
+    prop_s(n, p2),
+    prop_t(l, p2),
+    p1 != p2.
+
+Next($Newnode(l), $Addprop(l, p1), $Addprop(r, p2)):-
+    is_split(n, l, r),
+    prop_t(l, p1),
+    prop_s(n, p2),
+    prop_t(r, p2),
+    p1 != p2.
+
+Next($Newnode(l), $Addprop(r, p1), $Addprop(r, p2)):-
+    is_split(n, l, r),
+    prop_t(r, p1),
+    prop_s(n, p2),
+    prop_t(r, p2),
+    p1 != p2.
+
+Next($Newnode(l), $Addprop(r, p), $Delnode(n)):-
+    is_split(n, l, r),
+    prop_t(r, p).
+*/
