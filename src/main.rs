@@ -23,7 +23,7 @@ use transproof::neo4j;
 use transproof::neo4j::{remove_label, save_timings, Neo4jConfig, SourceSelectorEnum, NEW_LABEL};
 
 use transproof::compute::*;
-use transproof::constants::{IDEMPOTENCE, MINHASH, NUM_BEST, PATH_WEIGHT, TOTAL_TIME};
+use transproof::constants::{BEAM_WIDTH, IDEMPOTENCE, MINHASH, NUM_BEST, PATH_WEIGHT, TOTAL_TIME};
 use transproof::errors::*;
 use transproof::transformation::*;
 
@@ -67,6 +67,7 @@ Options:
     --neo4j-uri <uri>      URI of the Neo4j instance. [default: localhost:7687]
     --neo4j-user <user>    Neo4j username. [default: ]
     --neo4j-pass <pass>    Neo4j password. [default: ]
+    --beam <beam>          Number of schemas to select per iteration (beam width). [default: 1]
     ";
 
 #[derive(Debug, Deserialize, Clone)]
@@ -93,6 +94,7 @@ struct Args {
     flag_neo4j_uri: String,
     flag_neo4j_user: String,
     flag_neo4j_pass: String,
+    flag_beam: usize,
 }
 
 fn main() -> Result<(), TransProofError> {
@@ -160,6 +162,10 @@ fn main() -> Result<(), TransProofError> {
     IDEMPOTENCE
         .set(args.flag_idempotent)
         .expect("Failed to set IDEMPOTENCE");
+
+    BEAM_WIDTH
+        .set(args.flag_beam)
+        .expect("Failed to set BEAM_WIDTH");
     let target_graph: Option<PropertyGraph> = args
         .flag_target
         .map(|fname| -> Result<PropertyGraph, std::io::Error> {

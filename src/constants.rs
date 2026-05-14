@@ -14,6 +14,8 @@ pub static MINHASH: OnceLock<Option<usize>> = OnceLock::new();
 pub static PATH_WEIGHT: OnceLock<f64> = OnceLock::new();
 /// Are edit operations idempotent?
 pub static IDEMPOTENCE: OnceLock<bool> = OnceLock::new();
+/// Number of schemas to select per iteration (beam width)
+pub static BEAM_WIDTH: OnceLock<usize> = OnceLock::new();
 
 // These are accumulators for timings and measurments
 lazy_static! {

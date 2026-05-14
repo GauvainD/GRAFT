@@ -99,6 +99,58 @@ impl Default for TransformationAutomaton {
     }
 }
 
+impl TransformationAutomaton {
+    /// Prints the automaton structure: start nodes, all nodes, and all edges.
+    pub fn display(&self) {
+        println!("=== TransformationAutomaton ===");
+        println!("Start nodes ({}):", self.start.len());
+        for idx in &self.start {
+            let node = &self.graph[*idx];
+            println!(
+                "  [{:?}] root={:?} id={:?} op={:?}{}",
+                idx,
+                node.root,
+                node.t_id,
+                node.op,
+                if node.group.is_some() { " (group)" } else { "" }
+            );
+        }
+        println!("All nodes ({}):", self.graph.node_count());
+        for idx in self.graph.node_indices() {
+            let node = &self.graph[idx];
+            if let Some(group) = &node.group {
+                println!(
+                    "  [{:?}] root={:?} id={:?} op={:?} group=[{}]",
+                    idx,
+                    node.root,
+                    node.t_id,
+                    node.op,
+                    group
+                        .iter()
+                        .map(|o| format!("{:?}", o))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            } else {
+                println!(
+                    "  [{:?}] root={:?} id={:?} op={:?}",
+                    idx, node.root, node.t_id, node.op
+                );
+            }
+        }
+        println!("Edges ({}):", self.graph.edge_count());
+        for edge in self.graph.edge_references() {
+            println!(
+                "  [{:?}] -> [{:?}]  label={:?}",
+                edge.source(),
+                edge.target(),
+                edge.weight()
+            );
+        }
+        println!("==============================");
+    }
+}
+
 /// Utility function to produce an undirected graph that will be used to detect cliques. Contains
 /// an edge between two edit operations if they have the same root, id and are the same meta-edit
 /// operation (thus commutative).
@@ -169,7 +221,7 @@ pub fn contract_graph(g: &mut TransformationAutomaton) {
                     [(neighbors_incoming, true), (neighbors_outgoing, false)]
                 {
                     while let Some(u) = neighbor.next_node(&g.graph) {
-                        if !set.contains(node_map.get(&u).unwrap()) {
+                        if node_map.get(&u).map_or(true, |idx| !set.contains(idx)) {
                             if incoming && !g.graph.contains_edge(u, new_node_ref) {
                                 g.graph.add_edge(u, new_node_ref, Some(op.clone()));
                             } else if !incoming && !g.graph.contains_edge(new_node_ref, u) {
