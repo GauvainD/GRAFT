@@ -16,6 +16,8 @@ pub static PATH_WEIGHT: OnceLock<f64> = OnceLock::new();
 pub static IDEMPOTENCE: OnceLock<bool> = OnceLock::new();
 /// Number of schemas to select per iteration (beam width)
 pub static BEAM_WIDTH: OnceLock<usize> = OnceLock::new();
+/// Use weighted Jaccard (type-weighted, length-normalised) instead of plain Jaccard
+pub static WEIGHTED: OnceLock<bool> = OnceLock::new();
 
 // These are accumulators for timings and measurments
 lazy_static! {

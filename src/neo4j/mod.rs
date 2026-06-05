@@ -676,7 +676,7 @@ async fn compute_paths_async(
 ) {
     let path_query = format!(
         "
-match p=shortest 1 (s:{source})-[:{meta}]-*(t:{target})
+match p=shortest 1 (s:{source})-[:{meta}]->*(t:{target})
 return p;
     ",
         source = source_label,

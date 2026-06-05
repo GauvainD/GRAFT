@@ -42,3 +42,6 @@ name = "similarity"
 
 [[bin]]
 name = "ibench"
+
+[[bin]]
+name = "serialize_graph"

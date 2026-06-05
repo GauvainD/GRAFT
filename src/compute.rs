@@ -5,12 +5,12 @@
 //! vector of schemas using `rayon`. The aggregate thread functions ([`output`] and
 //! [`output_neo4j`]) read from the channel and write results to a file or Neo4j respectively.
 
-use crate::constants::{GEN_TIME, MINHASH, NEO4J_TIME, NUM_BEST, SIM_TIME};
+use crate::constants::{GEN_TIME, MINHASH, NEO4J_TIME, NUM_BEST, SIM_TIME, WEIGHTED};
 use crate::errors::*;
 use crate::graph_transformation::GraphTransformation;
 use crate::neo4j::write_graph_transformation;
 use crate::property_graph::PropertyGraph;
-use crate::similarity::{jaccard_index, property_graph_minhash};
+use crate::similarity::{jaccard_index, property_graph_minhash, weighted_jaccard_graphs};
 use crate::transformation::*;
 use log::info;
 use probminhash::jaccard::compute_probminhash_jaccard;
@@ -106,6 +106,8 @@ pub fn handle_graph(
                         .unwrap();
                     let g_hash = property_graph_minhash(&h.result, sample);
                     compute_probminhash_jaccard(&target_hash, &g_hash)
+                } else if *WEIGHTED.get().unwrap_or(&false) {
+                    weighted_jaccard_graphs(&h.result, target, None, true)
                 } else {
                     jaccard_index(&h.result, target)
                 };
