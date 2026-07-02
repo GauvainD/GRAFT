@@ -30,9 +30,9 @@ use transproof::transformation::*;
 use transproof::{parsing::PropertyGraphParser, property_graph::PropertyGraph};
 
 const USAGE: &str = "
-Transrust is a tool to compute the results of different transformations on a given set of graphs.
-These graphs have to be given in graph6 format from the input (one signature per line) and the
-result is outputed in csv format.
+GRAFT computes candidate transformations between property graph schemas. Source and target schemas
+are read in PGSchema format from the input, and results are written in PGSchema format to the
+output.
 
 Usage:
     graft [options] <program>

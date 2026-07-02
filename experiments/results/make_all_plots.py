@@ -40,7 +40,7 @@ def label_block(i, label):
 
 
 # --- CSV file paths ---
-CSV_IBENCH_TRANSFOS = "./csv/transformations_ibehnch.csv"
+CSV_IBENCH_TRANSFOS = "./csv/transformations_ibench.csv"
 CSV_SIMILARITIES = "./csv/similarities.csv"
 CSV_CAND_SCHEMA = "./csv/cand-schema-comparison.csv"
 CSV_CAND_SCHEMA_PATH = "./csv/cand-schema-comparison-path.csv"

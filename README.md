@@ -3,8 +3,8 @@
 GRAFT computes candidate transformations between property graph schemas. From a
 source schema, a target schema, and a set of Datalog rules describing valid
 transformation operations, it searches for sequences of operations that bring
-the source as close as possible to the target, ranked by Jaccard or MinHash
-similarity.
+the source as close as possible to the target, ranked by Jaccard, weighted
+Jaccard, or MinHash similarity.
 
 In single-run mode the results go to stdout or a text file. With `--neo4j`,
 results are stored in a Neo4j database and GRAFT loops, repeatedly picking the
@@ -24,6 +24,7 @@ Below is a description of the different directories and files in the repository.
 - `examples`: Various example schemas.
 - `experiments`: Datasets used for the experiments in the paper as well as results.
 - `src`: Source code.
+- `test_inputs`: Fixture schemas used by the test suite.
 
 ## Requirements
 
@@ -57,9 +58,9 @@ SOUFFLE_INCLUDE=/opt/souffle/include BUILD_ENABLED=1 cargo build --release
 The `<program>` argument is the name of your Datalog file without the `.dl` extension.
 
 ```
-Transrust is a tool to compute the results of different transformations on a given set of graphs.
-Input schemas are read in PGSchema format (one or more schemas per file). Results are written in
-PGSchema format, with source and result schemas separated by ===.
+GRAFT computes candidate transformations between property graph schemas. Source and target schemas
+are read in PGSchema format from the input, and results are written in PGSchema format to the
+output.
 
 Usage:
     graft [options] <program>
@@ -83,10 +84,10 @@ Options:
     --neo4j                Writes the output in a Neo4j database and proceed to multiple loops. Incompatible with -o.
     -l, --label <label>    Reads graphs from metanodes in Neo4j database having the given label. Incompatible with -i.
     --target <target>      File containing the target schema.
-    -p, --prune <prune>    Number of best results to keep. [default: 6]
+    -p, --prune <prune>    Number of best results to keep. Set to 0 to keep all of them. [default: 6]
     --strat <strategy>     Strategy to use for the computation. Available strategies are: naive, random, weighted_distance and greedy. [default: greedy]
     -w, --weight <weight>  Weight to give to the distance in the weighted distance strategy. Must be between 0 and 1. [default: 0.5]
-    --minshash <sample>    Use minhash similarity with the given sample size instead of default jaccard index. [default: 200]
+    --minshash <sample>    Use minhash similarity with the given sample size instead of default jaccard index.
     --idempotent           Operations are idempotent
     --theta <sim>          Minimum similarity to be considered as a solution. [default: 1.0]
     --turns <turns>        Maximum number of iterations without minimal improvement before giving up. [default: 5]
@@ -94,6 +95,9 @@ Options:
     --neo4j-uri <uri>      URI of the Neo4j instance. [default: localhost:7687]
     --neo4j-user <user>    Neo4j username. [default: ]
     --neo4j-pass <pass>    Neo4j password. [default: ]
+    --beam <beam>          Number of schemas to select per iteration (beam width). [default: 1]
+    --weighted             Use weighted Jaccard (per-feature-type weights, length-normalised)
+                           instead of the plain Jaccard index. Ignored when --minshash is set.
 ```
 
 ### Single-run mode
@@ -110,7 +114,8 @@ graft -i input.pgschema --target target.pgschema -p 6 myprogram
 With `--neo4j`, each round's results are written to Neo4j. GRAFT then loops,
 selecting schemas with the chosen strategy (`--strat`) and transforming them
 again, until the similarity threshold (`--theta`) is reached or `--turns` rounds
-pass without enough improvement.
+pass without enough improvement. The number of schemas selected per iteration
+is controlled by `--beam` (beam width).
 
 ```sh
 graft --neo4j --target target.pgschema --strat greedy \

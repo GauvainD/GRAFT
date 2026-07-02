@@ -14,6 +14,7 @@ def run_query(query):
 
 
 def del_prop(node, prop):
+    """Remove property `prop` from every node labeled `node`."""
     print(f"Delete {node}.{prop}")
     run_query(f"""
     MATCH (n:{node})
@@ -22,6 +23,7 @@ def del_prop(node, prop):
 
 
 def create_node(node, source):
+    """Create a `node`-labeled node for each `source`-labeled node, copying only node_id."""
     print(f"Create node {node}")
     run_query(f"""
     MATCH (n:{source})
@@ -44,6 +46,7 @@ def create_node_index(node, source):
 
 
 def add_prop(node, prop, snode, sprop):
+    """Set `node`.`prop` from `snode`.`sprop` by matching on node_id."""
     print(f"Add {node}.{prop}")
     run_query(f"""
     MATCH (n:{node})
@@ -53,6 +56,7 @@ def add_prop(node, prop, snode, sprop):
 
 
 def import_prop(node, prop, file, fileindex):
+    """Load a pipe-delimited CSV and merge column `fileindex` into `node`.`prop`, matching/creating nodes by node_id (CSV column 0)."""
     print(f"Create {node}.{prop}")
     run_query(f"""
 LOAD CSV FROM 'file:///{PWD}/{PATH}/{file}.csv' AS row FIELDTERMINATOR '|'
@@ -62,6 +66,7 @@ SET n.{prop} = row[{fileindex}]
 
 
 def del_node(node):
+    """Delete every `node`-labeled node along with its relationships."""
     print(f"Delete {node}")
     run_query(f"""
     MATCH (n:{node})
@@ -79,6 +84,7 @@ def del_node(node):
 
 
 def create_node_from_prop(node, source, sprop):
+    """Create one `node`-labeled node (node_id = value) per distinct non-null `source`.`sprop` value."""
     print(f"Create node {node} from {source}.{sprop}")
     run_query(f"""
     MATCH (n:{source})
@@ -88,6 +94,7 @@ def create_node_from_prop(node, source, sprop):
 
 
 def add_prop_from(node, prop, source, sprop, skey):
+    """Set `node`.`prop` to `source`.`sprop`, matching `source`.`skey` to the target's node_id."""
     print(f"Add {node}.{prop} from {source}.{sprop}")
     run_query(f"""
     MATCH (n:{source})
@@ -98,6 +105,7 @@ def add_prop_from(node, prop, source, sprop, skey):
 
 
 def create_edge(name, from_node, to, from_key="node_id", to_key="node_id"):
+    """Create a `name` relationship from each `from_node` to the `to` node whose `to_key` matches its `from_key`."""
     print(f"Create {from_node}-[{name}]->{to}")
     run_query(f"""
     MATCH (f:{from_node})
@@ -108,6 +116,7 @@ def create_edge(name, from_node, to, from_key="node_id", to_key="node_id"):
 
 
 def create_edge_from_edge(name, from_node, to, orig_name, orig_from, orig_to):
+    """Recreate every `orig_name` edge between `orig_from`/`orig_to` as a `name` edge between the corresponding `from_node`/`to` nodes (matched by node_id)."""
     print(f"Create {from_node}-[{name}]->{to}")
     run_query(f"""
     MATCH (of:{orig_from})-[:{orig_name}]->(ot:{orig_to})

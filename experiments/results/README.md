@@ -19,8 +19,8 @@ Dependencies: `pandas`, `polars`, `seaborn`, `matplotlib`, `numpy`.
 
 Each row is one entry of the `BUILDERS` dispatch table in `make_all_plots.py`
 (`<name>` is the CLI argument, output file is `plots/<name>.pdf`). The "Paper
-figure" column cross-references `included_pdfs.md`, which traces every
-`\includegraphics` in the paper's `main.tex` back to its generating script.
+figure" column gives the corresponding file in the paper's `figures/`
+directory and the label/caption it appears under.
 
 | `<name>` | Output file | Contents | Paper figure |
 |---|---|---|---|
@@ -71,9 +71,9 @@ Not every file has every column — see the per-file table below.
 | `theta-comparison.csv` | `figure7`, `figure8` | Varying the minimum similarity threshold θ |
 | `nok.csv` | `figure8`, `dblp_pruning`, `figure6_beam` | "No pruning"/unbounded baseline runs; includes `num_dup`/`num_tot`, no `transfo_path` |
 | `beam.csv` | `figure6_beam` | Beam-width sweep; `index` format `<dataset>-<strategy>-<beam width>`; includes `num_dup`/`num_tot`, `transfo_path` |
-| `transformations.csv` | `transformation_details` | Per-edit-operation timing/impacted-element breakdown (`transfo, operation, time, num_elems`); one row per operation instance, scalar values (not 5-run arrays) |
+| `transformations_ibench.csv` | `transformation_details` | Per-edit-operation timing/impacted-element breakdown (`transfo, operation, time, num_elems`); one row per operation instance, scalar values (not 5-run arrays) |
 | `transformations_icij.csv` | `icij_instance` | ICIJ transformation trace (`transfo, type, elems, time, sim, size`); one row per applied transformation, `type=start` is the baseline |
-| `all_transfos.csv` | `instance_experiment` | Per-transformation-type summary (`transfo, elems, time, sim, size`); scalar values, one row per transformation type |
+| `all_transfos_ibench.csv` | `instance_experiment` | Per-transformation-type summary (`transfo, elems, time, sim, size`); scalar values, one row per transformation type |
 | `sf_data.csv` | `instance_experiment` | Scale-factor rows (`sf, elems, time`); scalar values, one row per scale factor |
 | `ibench_huge.csv` | *(unused — `load_ibench_data` in `make_all_plots.py` is not called by any builder)* | Large-scale iBench sweep, same column shape as `beam.csv`; also read directly by the standalone `plot_huge.py` (see below) |
 

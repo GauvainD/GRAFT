@@ -12,15 +12,15 @@ import neo4j
 
 GRAFT_PATH = Path("../../")
 NEO4J_URI = "neo4j://localhost"
-TIMEOUT = 6*3600
+TIMEOUT = 6 * 3600
 OVERWRITE = False
 APPEND = False
 PRUNE_TIMEOUTS = False
-NUM_RUNS = 1
+NUM_RUNS = 5
 SAVE_TRANSFO_PATH = True
 
 DEFAULTS: dict[str, Any] = {
-    "pruning": 16,
+    "pruning": 8,
     "minshash": None,
     "weighted": False,
     "dir": "icij",
@@ -33,7 +33,7 @@ DEFAULTS: dict[str, Any] = {
     "filename": "nok-two.csv",
     "theta": 1.0,
     "idemp": False,
-    "beam": 1
+    "beam": 1,
 }
 
 
@@ -147,12 +147,10 @@ def get_path(driver: neo4j.Driver) -> tuple[list, list]:
 
 
 def get_transfo_path(driver: neo4j.Driver) -> Optional[str]:
-    records, _, _ = driver.execute_query(
-        """
+    records, _, _ = driver.execute_query("""
         MATCH p = SHORTEST 1 (s:Source)-[:Meta]-*(t:Target)
         RETURN [r IN relationships(p) | r.operations]
-        """
-    )
+        """)
     if records:
         return ":".join(";".join(t) for t in records[0][0])
     return None
@@ -222,7 +220,7 @@ def run_transrust(params: BenchmarkParams) -> bool:
         str(params.theta),
         "--beam",
         str(params.beam),
-        params.dir
+        params.dir,
     ]
     if params.minshash is not None:
         cmd += ["--minshash", str(params.minshash)]
