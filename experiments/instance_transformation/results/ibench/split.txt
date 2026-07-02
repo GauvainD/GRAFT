@@ -1,0 +1,30 @@
+=*10
+Split
+=*10
+Create node send_vp_0_nl0_ce1
+1983
+SummaryCounters{labels_added: 84280, nodes_created: 84280, properties_set: 84280, contains_updates: True, contains_system_updates: False}
+Create node spoon_vp_0_nl0_ce0
+512
+SummaryCounters{labels_added: 84280, nodes_created: 84280, properties_set: 84280, contains_updates: True, contains_system_updates: False}
+Add send_vp_0_nl0_ce1.account_vp_0_nl0_ae3
+1545
+SummaryCounters{properties_set: 84280, contains_updates: True, contains_system_updates: False}
+Add send_vp_0_nl0_ce1.self_vp_0_nl0_ae4
+798
+SummaryCounters{properties_set: 84280, contains_updates: True, contains_system_updates: False}
+Add send_vp_0_nl0_ce1.chess_vp_0_nl0_ae2
+719
+SummaryCounters{properties_set: 84280, contains_updates: True, contains_system_updates: False}
+Add spoon_vp_0_nl0_ce0.break_vp_0_nl0_ae1
+721
+SummaryCounters{properties_set: 84280, contains_updates: True, contains_system_updates: False}
+Add spoon_vp_0_nl0_ce0.sound_vp_0_nl0_ae0ke0
+698
+SummaryCounters{properties_set: 84280, contains_updates: True, contains_system_updates: False}
+Create send_vp_0_nl0_ce1-[card_vp_0_nl0_ae0joinattrref]-spoon_vp_0_nl0_ce0
+791
+SummaryCounters{relationships_created: 84280, contains_updates: True, contains_system_updates: False}
+Delete come_vp_0_nl0_ce0
+331
+SummaryCounters{nodes_deleted: 84280, contains_updates: True, contains_system_updates: False}

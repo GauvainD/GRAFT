@@ -1,0 +1,129 @@
+=*10
+R9_1
+=*10
+Create node T_Officer
+4047
+SummaryCounters{labels_added: 771315, nodes_created: 771315, properties_set: 771315, contains_updates: True, contains_system_updates: False}
+Create node T_Address
+1294
+SummaryCounters{labels_added: 402246, nodes_created: 402246, properties_set: 402246, contains_updates: True, contains_system_updates: False}
+Add T_Address.source
+5470
+SummaryCounters{properties_set: 402246, contains_updates: True, contains_system_updates: False}
+Create node T_Country
+150
+SummaryCounters{labels_added: 193, nodes_created: 193, properties_set: 193, contains_updates: True, contains_system_updates: False}
+Create T_Intermediary-[T_REG_ADDRESS]->T_Address
+317
+SummaryCounters{contains_updates: False, contains_system_updates: False}
+Add T_Country.name
+90
+SummaryCounters{properties_set: 193, contains_updates: True, contains_system_updates: False}
+=*10
+R1_3_1
+=*10
+Create node T_Intermediary
+875
+SummaryCounters{labels_added: 26768, nodes_created: 26768, properties_set: 26768, contains_updates: True, contains_system_updates: False}
+Add T_Intermediary.source
+368
+SummaryCounters{properties_set: 26768, contains_updates: True, contains_system_updates: False}
+Create node T_Address
+1154
+SummaryCounters{labels_added: 402246, nodes_created: 402246, properties_set: 402246, contains_updates: True, contains_system_updates: False}
+Add T_Address.valid_until
+6854
+SummaryCounters{properties_set: 803058, contains_updates: True, contains_system_updates: False}
+Create T_Intermediary-[T_REG_ADDRESS]->T_Address
+880
+SummaryCounters{relationships_created: 20992, contains_updates: True, contains_system_updates: False}
+=*10
+R10_3_1
+=*10
+Add T_Officer.status
+5983
+SummaryCounters{properties_set: 158, contains_updates: True, contains_system_updates: False}
+Add T_Officer.source
+7275
+SummaryCounters{properties_set: 771315, contains_updates: True, contains_system_updates: False}
+Add T_Officer.name
+7117
+SummaryCounters{properties_set: 771256, contains_updates: True, contains_system_updates: False}
+=*10
+R10_3_2
+=*10
+Add T_Address.address
+7214
+SummaryCounters{properties_set: 764614, contains_updates: True, contains_system_updates: False}
+Add T_Address.valid_until
+6937
+SummaryCounters{properties_set: 803058, contains_updates: True, contains_system_updates: False}
+Add T_Address.orig_addr
+6188
+SummaryCounters{properties_set: 1056, contains_updates: True, contains_system_updates: False}
+=*10
+R14_1
+=*10
+Create T_Address-[T_SAME_AS]->T_Address
+859
+SummaryCounters{relationships_created: 3840, contains_updates: True, contains_system_updates: False}
+=*10
+R10_13_3
+=*10
+Add T_Intermediary.name
+273
+SummaryCounters{properties_set: 26767, contains_updates: True, contains_system_updates: False}
+Add T_Intermediary.valid_until
+264
+SummaryCounters{properties_set: 26768, contains_updates: True, contains_system_updates: False}
+Add T_Intermediary.status
+317
+SummaryCounters{properties_set: 12621, contains_updates: True, contains_system_updates: False}
+=*10
+R14_2
+=*10
+Create T_Officer-[T_SIMILAR]->T_Officer
+1056
+SummaryCounters{relationships_created: 46398, contains_updates: True, contains_system_updates: False}
+=*10
+R10_13_4
+=*10
+Create node T_Entity
+3734
+SummaryCounters{labels_added: 814344, nodes_created: 814344, properties_set: 814344, contains_updates: True, contains_system_updates: False}
+Add T_Entity.name
+8191
+SummaryCounters{properties_set: 814319, contains_updates: True, contains_system_updates: False}
+Add T_Entity.inact_date
+7173
+SummaryCounters{properties_set: 213647, contains_updates: True, contains_system_updates: False}
+Add T_Entity.orig_name
+7455
+SummaryCounters{properties_set: 389522, contains_updates: True, contains_system_updates: False}
+Add T_Entity.source
+7930
+SummaryCounters{properties_set: 814344, contains_updates: True, contains_system_updates: False}
+Add T_Entity.inc_date
+7899
+SummaryCounters{properties_set: 788522, contains_updates: True, contains_system_updates: False}
+=*10
+R6_1
+=*10
+Create node T_Jurisdiction from Entity.jurisdiction
+8452
+SummaryCounters{labels_added: 102, nodes_created: 102, properties_set: 102, contains_updates: True, contains_system_updates: False}
+Add T_Jurisdiction.juris from Entity.jurisdiction
+1103
+SummaryCounters{properties_set: 806780, contains_updates: True, contains_system_updates: False}
+Create T_Entity-[T_IN_JURIS]->T_Jurisdiction
+405
+SummaryCounters{contains_updates: False, contains_system_updates: False}
+Create T_Jurisdiction-[T_RELATED]->T_Country
+78
+SummaryCounters{contains_updates: False, contains_system_updates: False}
+=*10
+additional
+=*10
+Create T_Address-[T_LOCATED]->T_Country
+282
+SummaryCounters{contains_updates: False, contains_system_updates: False}

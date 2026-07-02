@@ -1,0 +1,54 @@
+################################################################################
+#
+# Configuration File for iBench
+#
+# Basic tutorial configuration that creates a single copy scenario
+#
+################################################################################
+
+########################################
+# Output path prefixes and file names
+SchemaPathPrefix = testgen
+
+FileNames.Schemas = metadata.xml
+
+########################################
+# Number of Instances for each Basic Scenario Type
+# Create one copy scenario
+Scenarios.COPY = 495
+Scenarios.VERTPARTITION = 1
+Scenarios.MERGING = 1
+Scenarios.ADDATTRIBUTE = 1
+Scenarios.DELATTRIBUTE = 1
+
+################################################################################
+# Additional configuration
+
+# relations have 5 attributes each
+ConfigOptions.NumOfSubElements = 5
+
+# Random number generator and max values, DataGenerator and MappingLang
+RandomSeed = 2
+
+# create 10 rows of data
+#RepElementCount = 84280
+RepElementCount = 1
+DataGenerator = TrampCSV
+QueryGenerator = Postgres
+MappingLanguage = SOtgds
+
+################################################################################
+# Optional activation/deactivation of output options
+# create only TrampXML metadata file and data
+################################################################################ 
+
+OutputOption.Data = true
+OutputOption.XMLSchemas = false
+OutputOption.TrampXML = true			
+
+################################################################################
+# Optional activation/deactivation of parts of the generated Tramp XML document
+################################################################################
+
+TrampXMLOutput.ConnectionInfo = false
+TrampXMLOutput.Data = false

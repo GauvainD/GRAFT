@@ -1,0 +1,9 @@
+=*10
+Add props
+=*10
+Create fish_ad_0_nl0_ce0.feeble_ad_0_nl0_ae6
+3097
+SummaryCounters{properties_set: 84280, contains_updates: True, contains_system_updates: False}
+Create fish_ad_0_nl0_ce0.produce_ad_0_nl0_ae5
+1230
+SummaryCounters{properties_set: 84280, contains_updates: True, contains_system_updates: False}

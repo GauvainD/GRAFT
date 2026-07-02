@@ -1,0 +1,195 @@
+[
+
+{
+  "identity": 590,
+  "start": 184,
+  "end": 253,
+  "type": "Meta",
+  "properties": {
+    "operations": [
+      "AddVertex("T_Officer")",
+      "AddVertex("T_Address")",
+      "AddVertexProperty("T_Address", "source", "String")",
+      "AddVertex("T_Country")",
+      "AddEdge("T_REGISTERED_ADDRESS", "T_Officer", "T_Address")",
+      "AddEdge("T_LOCATED", "T_Address", "T_Country")",
+      "AddVertexProperty("T_Country", "name", "String")"
+    ],
+    "transfo_id": "R9"
+  },
+  "elementId": "5:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:590",
+  "startNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:184",
+  "endNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:253"
+}
+
+, 
+
+{
+  "identity": 734,
+  "start": 253,
+  "end": 332,
+  "type": "Meta",
+  "properties": {
+    "operations": [
+      "AddVertex("T_Intermediary")",
+      "AddVertexProperty("T_Intermediary", "source", "String")",
+      "AddVertex("T_Address")",
+      "AddVertexProperty("T_Address", "valid_until", "String")",
+      "AddEdge("T_REG_ADDRESS", "T_Intermediary", "T_Address")"
+    ],
+    "transfo_id": "R1;3"
+  },
+  "elementId": "5:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:734",
+  "startNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:253",
+  "endNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:332"
+}
+
+, 
+
+{
+  "identity": 824,
+  "start": 332,
+  "end": 382,
+  "type": "Meta",
+  "properties": {
+    "operations": [
+      "AddVertex("T_Officer")",
+      "AddVertexProperty("T_Officer", "status", "String")",
+      "AddVertexProperty("T_Officer", "source", "String")",
+      "AddVertexProperty("T_Officer", "name", "String")"
+    ],
+    "transfo_id": "R10-13"
+  },
+  "elementId": "5:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:824",
+  "startNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:332",
+  "endNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:382"
+}
+
+, 
+
+{
+  "identity": 1033,
+  "start": 382,
+  "end": 498,
+  "type": "Meta",
+  "properties": {
+    "operations": [
+      "AddVertex("T_Address")",
+      "AddVertexProperty("T_Address", "address", "String")",
+      "AddVertexProperty("T_Address", "source", "String")",
+      "AddVertexProperty("T_Address", "valid_until", "String")",
+      "AddVertexProperty("T_Address", "orig_addr", "String")"
+    ],
+    "transfo_id": "R10-13"
+  },
+  "elementId": "5:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:1033",
+  "startNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:382",
+  "endNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:498"
+}
+
+, 
+
+{
+  "identity": 1175,
+  "start": 498,
+  "end": 577,
+  "type": "Meta",
+  "properties": {
+    "operations": [
+      "AddVertex("T_Address")",
+      "AddEdge("T_SAME_AS", "T_Address", "T_Address")"
+    ],
+    "transfo_id": "R14"
+  },
+  "elementId": "5:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:1175",
+  "startNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:498",
+  "endNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:577"
+}
+
+, 
+
+{
+  "identity": 1363,
+  "start": 577,
+  "end": 678,
+  "type": "Meta",
+  "properties": {
+    "operations": [
+      "AddVertex("T_Intermediary")",
+      "AddVertexProperty("T_Intermediary", "name", "String")",
+      "AddVertexProperty("T_Intermediary", "valid_until", "String")",
+      "AddVertexProperty("T_Intermediary", "status", "String")"
+    ],
+    "transfo_id": "R10-13"
+  },
+  "elementId": "5:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:1363",
+  "startNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:577",
+  "endNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:678"
+}
+
+, 
+
+{
+  "identity": 1470,
+  "start": 678,
+  "end": 735,
+  "type": "Meta",
+  "properties": {
+    "operations": [
+      "AddVertex("T_Officer")",
+      "AddEdge("T_SIMILAR", "T_Officer", "T_Officer")"
+    ],
+    "transfo_id": "R14"
+  },
+  "elementId": "5:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:1470",
+  "startNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:678",
+  "endNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:735"
+}
+
+, 
+
+{
+  "identity": 1715,
+  "start": 735,
+  "end": 863,
+  "type": "Meta",
+  "properties": {
+    "operations": [
+      "AddVertex("T_Entity")",
+      "AddVertexProperty("T_Entity", "name", "String")",
+      "AddVertexProperty("T_Entity", "inact_date", "String")",
+      "AddVertexProperty("T_Entity", "orig_name", "String")",
+      "AddVertexProperty("T_Entity", "source", "String")",
+      "AddVertexProperty("T_Entity", "inc_date", "String")"
+    ],
+    "transfo_id": "R10-13"
+  },
+  "elementId": "5:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:1715",
+  "startNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:735",
+  "endNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:863"
+}
+
+, 
+
+{
+  "identity": 1854,
+  "start": 863,
+  "end": 934,
+  "type": "Meta",
+  "properties": {
+    "operations": [
+      "AddVertex("T_Entity")",
+      "AddVertex("T_Jurisdiction")",
+      "AddVertexProperty("T_Jurisdiction", "juris", "String")",
+      "AddVertex("T_Country")",
+      "AddEdge("T_IN_JURIS", "T_Entity", "T_Jurisdiction")",
+      "AddEdge("T_RELATED", "T_Jurisdiction", "T_Country")"
+    ],
+    "transfo_id": "R6"
+  },
+  "elementId": "5:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:1854",
+  "startNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:863",
+  "endNodeElementId": "4:95a097f6-8df1-4d0b-b84d-ad1b8c4d88f3:934"
+}
+
+]

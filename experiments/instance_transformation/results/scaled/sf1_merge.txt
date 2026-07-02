@@ -1,0 +1,39 @@
+=*10
+Merge
+=*10
+Create node vote_me_0_nl0_ce0
+1769
+SummaryCounters{labels_added: 27942, nodes_created: 27942, properties_set: 27942, contains_updates: True, contains_system_updates: False}
+Add vote_me_0_nl0_ce0.free_me_0_nl1_ae3
+1542
+SummaryCounters{properties_set: 27942, contains_updates: True, contains_system_updates: False}
+Add vote_me_0_nl0_ce0.scale_me_0_nl1_ae0
+549
+SummaryCounters{properties_set: 27942, contains_updates: True, contains_system_updates: False}
+Add vote_me_0_nl0_ce0.improve_me_0_nl0_ae3
+304
+SummaryCounters{properties_set: 27942, contains_updates: True, contains_system_updates: False}
+Add vote_me_0_nl0_ce0.wish_me_0_nl0_ae0
+280
+SummaryCounters{properties_set: 27942, contains_updates: True, contains_system_updates: False}
+Add vote_me_0_nl0_ce0.purpose_me_0_nl1_ae1
+285
+SummaryCounters{properties_set: 27942, contains_updates: True, contains_system_updates: False}
+Add vote_me_0_nl0_ce0.soap_me_0_nl0_ae0comp1_joinattr_0
+294
+SummaryCounters{properties_set: 27942, contains_updates: True, contains_system_updates: False}
+Add vote_me_0_nl0_ce0.wait_me_0_nl1_ae2
+284
+SummaryCounters{properties_set: 27942, contains_updates: True, contains_system_updates: False}
+Add vote_me_0_nl0_ce0.page_me_0_nl0_ae2
+275
+SummaryCounters{properties_set: 27942, contains_updates: True, contains_system_updates: False}
+Add vote_me_0_nl0_ce0.listen_me_0_nl0_ae1
+287
+SummaryCounters{properties_set: 27942, contains_updates: True, contains_system_updates: False}
+Delete store_me_0_nl0_ce1
+440
+SummaryCounters{nodes_deleted: 27942, relationships_deleted: 27942, contains_updates: True, contains_system_updates: False}
+Delete enable_me_0_nl0_ce0
+132
+SummaryCounters{nodes_deleted: 27942, contains_updates: True, contains_system_updates: False}
