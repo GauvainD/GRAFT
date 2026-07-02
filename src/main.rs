@@ -23,7 +23,7 @@ use transproof::neo4j;
 use transproof::neo4j::{remove_label, save_timings, Neo4jConfig, SourceSelectorEnum, NEW_LABEL};
 
 use transproof::compute::*;
-use transproof::constants::{IDEMPOTENCE, MINHASH, NUM_BEST, PATH_WEIGHT, TOTAL_TIME};
+use transproof::constants::{BEAM_WIDTH, IDEMPOTENCE, MINHASH, NUM_BEST, PATH_WEIGHT, TOTAL_TIME, WEIGHTED};
 use transproof::errors::*;
 use transproof::transformation::*;
 
@@ -56,10 +56,10 @@ Options:
     --neo4j                Writes the output in a Neo4j database and proceed to multiple loops. Incompatible with -o.
     -l, --label <label>    Reads graphs from metanodes in Neo4j database having the given label. Incompatible with -i.
     --target <target>      File containing the target schema.
-    -p, --prune <prune>    Number of best results to keep. [default: 6]
+    -p, --prune <prune>    Number of best results to keep. Set to 0 to keep all of them. [default: 6]
     --strat <strategy>     Strategy to use for the computation. Available strategies are: naive, random, weighted_distance and greedy. [default: greedy]
     -w, --weight <weight>  Weight to give to the distance in the weighted distance strategy. Must be between 0 and 1. [default: 0.5]
-    --minshash <sample>    Use minhash similarity with the given sample size instead of default jaccard index. [default: 200]
+    --minshash <sample>    Use minhash similarity with the given sample size instead of default jaccard index.
     --idempotent           Operations are idempotent
     --theta <sim>          Minimum similarity to be considered as a solution. [default: 1.0]
     --turns <turns>        Maximum number of iterations without minimal improvement before giving up. [default: 5]
@@ -67,6 +67,9 @@ Options:
     --neo4j-uri <uri>      URI of the Neo4j instance. [default: localhost:7687]
     --neo4j-user <user>    Neo4j username. [default: ]
     --neo4j-pass <pass>    Neo4j password. [default: ]
+    --beam <beam>          Number of schemas to select per iteration (beam width). [default: 1]
+    --weighted             Use weighted Jaccard (per-feature-type weights, length-normalised)
+                           instead of the plain Jaccard index. Ignored when --minshash is set.
     ";
 
 #[derive(Debug, Deserialize, Clone)]
@@ -93,6 +96,8 @@ struct Args {
     flag_neo4j_uri: String,
     flag_neo4j_user: String,
     flag_neo4j_pass: String,
+    flag_beam: usize,
+    flag_weighted: bool,
 }
 
 fn main() -> Result<(), TransProofError> {
@@ -160,6 +165,14 @@ fn main() -> Result<(), TransProofError> {
     IDEMPOTENCE
         .set(args.flag_idempotent)
         .expect("Failed to set IDEMPOTENCE");
+
+    BEAM_WIDTH
+        .set(args.flag_beam)
+        .expect("Failed to set BEAM_WIDTH");
+
+    WEIGHTED
+        .set(args.flag_weighted)
+        .expect("Failed to set WEIGHTED");
     let target_graph: Option<PropertyGraph> = args
         .flag_target
         .map(|fname| -> Result<PropertyGraph, std::io::Error> {

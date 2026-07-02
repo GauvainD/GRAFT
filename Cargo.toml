@@ -21,6 +21,8 @@ neo4rs = "0.7.1"
 tokio = "1.38.0"
 probminhash = "0.1.11"
 rand = "0.9.1"
+quick-xml = { version = "0.39.2", features = ["serde", "serialize"] }
+regex = "1.12.3"
 
 [build-dependencies]
 cxx-build = "1.0.119"
@@ -37,3 +39,9 @@ name = "add_nodes_random"
 
 [[bin]]
 name = "similarity"
+
+[[bin]]
+name = "ibench"
+
+[[bin]]
+name = "serialize_graph"

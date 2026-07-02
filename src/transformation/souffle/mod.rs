@@ -408,7 +408,6 @@ unsafe fn generate_graph(program: Program) -> Option<TransformationAutomaton> {
     let record = getRecordTable(&program);
     let symbol = getSymbolTable(&program);
     let mut graph_res = None;
-    let mut hasher = DefaultHasher::new();
     for (next_relation_name, has_id) in [("Next", false), ("NextId", true)] {
         let next_relation = get_relation(program, next_relation_name);
         if let Some(next_relation) = next_relation {
@@ -418,6 +417,7 @@ unsafe fn generate_graph(program: Program) -> Option<TransformationAutomaton> {
                 let t = souffle_ffi::getNext(&mut iter);
                 let mut t_id = None;
                 if has_id {
+                    let mut hasher = DefaultHasher::new();
                     let name = extract_text(t);
                     name.hash(&mut hasher);
                     t_id = Some(hasher.finish() as usize);

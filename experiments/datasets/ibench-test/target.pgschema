@@ -1,0 +1,11 @@
+CREATE GRAPH TYPE {
+( test_cp_0_nl0_ce0:{ nut_cp_0_nl0_ae0ke0 TEXT , art_cp_0_nl0_ae1 TEXT } ),
+( compare_me_0_nl0_ce0:{ touch_me_0_nl0_ae0 TEXT , society_me_0_nl1_ae0 TEXT , slope_me_0_nl0_ae0comp1_joinattr_0 TEXT } ),
+( society_vp_0_nl0_ce0:{ great_vp_0_nl0_ae0ke0 TEXT } ),
+( warn_vp_0_nl0_ce1:{ affect_vp_0_nl0_ae1 TEXT } ),
+( tail_ad_0_nl0_ce0:{ red_ad_0_nl0_ae0ke0 TEXT , work_ad_0_nl0_ae2 TEXT , letter_ad_0_nl0_ae3 TEXT , past_ad_0_nl0_ae1 TEXT } ),
+( blue_dl_0_nl0_ce0:{ describe_dl_0_nl0_ae0ke0 TEXT } ),
+(:warn_vp_0_nl0_ce1)
+  -[different_vp_0_nl0_ae0joinattrref:{ } ]->
+(:society_vp_0_nl0_ce0),
+}

@@ -5,12 +5,12 @@
 //! vector of schemas using `rayon`. The aggregate thread functions ([`output`] and
 //! [`output_neo4j`]) read from the channel and write results to a file or Neo4j respectively.
 
-use crate::constants::{GEN_TIME, MINHASH, NEO4J_TIME, NUM_BEST, SIM_TIME};
+use crate::constants::{GEN_TIME, MINHASH, NEO4J_TIME, NUM_BEST, SIM_TIME, WEIGHTED};
 use crate::errors::*;
 use crate::graph_transformation::GraphTransformation;
 use crate::neo4j::write_graph_transformation;
 use crate::property_graph::PropertyGraph;
-use crate::similarity::{jaccard_index, property_graph_minhash};
+use crate::similarity::{jaccard_index, property_graph_minhash, weighted_jaccard_graphs};
 use crate::transformation::*;
 use log::info;
 use probminhash::jaccard::compute_probminhash_jaccard;
@@ -98,22 +98,24 @@ pub fn handle_graph(
             // If we have a target, we can compute similarity and prune the number of results.
             // Otherwise, each result is directly sent into the channel.
             if let Some(target) = target_graph.as_ref() {
-                if !stored.contains(&key) {
+                start = Instant::now();
+                let sim = if let Some(sample) = *MINHASH.get().unwrap() {
+                    let target_hash = target_graph
+                        .as_ref()
+                        .map(|g| property_graph_minhash(&g, sample))
+                        .unwrap();
+                    let g_hash = property_graph_minhash(&h.result, sample);
+                    compute_probminhash_jaccard(&target_hash, &g_hash)
+                } else if *WEIGHTED.get().unwrap_or(&false) {
+                    weighted_jaccard_graphs(&h.result, target, None, true)
+                } else {
+                    jaccard_index(&h.result, target)
+                };
+                {
+                    *SIM_TIME.lock().unwrap() += start.elapsed();
+                }
+                if *num_bests > 0 && !stored.contains(&key) {
                     stored.insert(key);
-                    start = Instant::now();
-                    let sim = if let Some(sample) = *MINHASH.get().unwrap() {
-                        let target_hash = target_graph
-                            .as_ref()
-                            .map(|g| property_graph_minhash(&g, sample))
-                            .unwrap();
-                        let g_hash = property_graph_minhash(&h.result, sample);
-                        compute_probminhash_jaccard(&target_hash, &g_hash)
-                    } else {
-                        jaccard_index(&h.result, target)
-                    };
-                    {
-                        *SIM_TIME.lock().unwrap() += start.elapsed();
-                    }
                     // In order to only keep the num_bests most similar, we insert each result into
                     // the heap and remove the least similar if we have too many.
                     bests.push(SimGraph(sim, key, h));
@@ -121,6 +123,8 @@ pub fn handle_graph(
                         let removed = bests.pop().unwrap();
                         stored.remove(&removed.1);
                     }
+                } else if *num_bests == 0 {
+                    t.send(LogInfo::TransfoSim(SimGraph(sim, key, h), "".to_string()))?;
                 }
             } else {
                 t.send(LogInfo::Transfo(h, "".to_string()))?;
@@ -128,8 +132,10 @@ pub fn handle_graph(
             start = Instant::now();
         }
     }
-    for transfo in bests {
-        t.send(LogInfo::TransfoSim(transfo, "".to_string()))?;
+    if *num_bests > 0 {
+        for transfo in bests {
+            t.send(LogInfo::TransfoSim(transfo, "".to_string()))?;
+        }
     }
     Ok(())
 }

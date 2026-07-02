@@ -4,7 +4,7 @@ import os
 import shelve
 import shutil
 import subprocess as sp
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
@@ -12,26 +12,28 @@ import neo4j
 
 GRAFT_PATH = Path("../../")
 NEO4J_URI = "neo4j://localhost"
-TIMEOUT = 600
+TIMEOUT = 6*3600
 OVERWRITE = False
 APPEND = False
 PRUNE_TIMEOUTS = False
-NUM_RUNS = 5
-SAVE_TRANSFO_PATH = False
+NUM_RUNS = 1
+SAVE_TRANSFO_PATH = True
 
 DEFAULTS: dict[str, Any] = {
-    "pruning": 8,
+    "pruning": 16,
     "minshash": None,
+    "weighted": False,
     "dir": "icij",
     "outputdir": "runs",
     "strat": "greedy",
     "weight": 0.5,
     "source": "sources",
     "target": "target",
-    "shelve_name": "results.shelf",
-    "filename": "results.csv",
+    "shelve_name": "nok-rest.shelf",
+    "filename": "nok-two.csv",
     "theta": 1.0,
     "idemp": False,
+    "beam": 1
 }
 
 
@@ -46,6 +48,8 @@ class BenchmarkParams:
     minshash: Optional[int]
     idemp: bool
     theta: float
+    weighted: bool
+    beam: int
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "BenchmarkParams":
@@ -59,6 +63,8 @@ class BenchmarkParams:
             minshash=d["minshash"],
             idemp=d["idemp"],
             theta=d["theta"],
+            weighted=d["weighted"],
+            beam=d["beam"],
         )
 
 
@@ -214,10 +220,14 @@ def run_transrust(params: BenchmarkParams) -> bool:
         str(params.weight),
         "--theta",
         str(params.theta),
+        "--beam",
+        str(params.beam),
         params.dir
     ]
     if params.minshash is not None:
         cmd += ["--minshash", str(params.minshash)]
+    elif params.weighted:
+        cmd += ["--weighted"]
     if params.idemp:
         cmd += ["--idempotent"]
     env = {**os.environ, "RUST_BACKTRACE": "1"}
@@ -339,12 +349,10 @@ if __name__ == "__main__":
         (
             "dir",
             [
-                "dblp_to_amalgam1",
-                "amalgam1_to_amalgam3",
-                "persondata",
                 "flighthotel",
+                "amalgam1_to_amalgam3",
             ],
         ),
         ("strat", ["greedy", "random", "weighted_distance", "naive"]),
-        ("minshash", [10, 50, 100, 200, None]),
+        ("pruning", [0]),
     )

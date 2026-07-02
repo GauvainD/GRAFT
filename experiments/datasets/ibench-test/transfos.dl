@@ -1,0 +1,274 @@
+.include "./definitions.dl"
+.include "./data.dl"
+
+// ===========================================================================
+// VERTEX CLASSIFICATION
+// ===========================================================================
+
+.decl source_only(v: symbol)
+source_only(v) :- Vertex(v), !TargetVertex(v).
+
+.decl target_only(v: symbol)
+target_only(v) :- TargetVertex(v), !Vertex(v).
+
+// Property name shared between a source-only and target-only vertex
+.decl shared_prop(vs: symbol, vt: symbol, p: symbol)
+shared_prop(vs, vt, p) :-
+    source_only(vs),
+    target_only(vt),
+    VertexProperty(vs, p, _),
+    TargetVertexProperty(vt, p, _).
+
+// Auxiliary membership predicates (needed for safe negation)
+.decl src_has_prop(v: symbol, p: symbol)
+src_has_prop(v, p) :- VertexProperty(v, p, _).
+
+.decl tgt_has_prop(v: symbol, p: symbol)
+tgt_has_prop(v, p) :- TargetVertexProperty(v, p, _).
+
+// ===========================================================================
+// TRANSFORMATION PATTERN DETECTION
+// ===========================================================================
+
+// MERGE: two source vertices (connected by an edge) → one target vertex
+.decl is_merge(vs1: symbol, vs2: symbol, vt: symbol)
+.output is_merge(IO=stdout)
+is_merge(vs1, vs2, vt) :-
+    source_only(vs1),
+    source_only(vs2),
+    target_only(vt),
+    vs1 != vs2,
+    shared_prop(vs1, vt, p1),
+    shared_prop(vs2, vt, p2),
+    p1 != p2,
+    Edge(_, vs1, vs2).
+
+// Auxiliary: vs participates as either source in a merge toward vt
+.decl is_merge_source(vs: symbol, vt: symbol)
+is_merge_source(vs, vt) :- is_merge(vs, _, vt).
+is_merge_source(vs, vt) :- is_merge(_, vs, vt).
+
+// SPLIT: one source vertex → two target vertices (connected by a target edge)
+// Convention: vt1 is the "from" endpoint of the target edge
+.decl is_split(vs: symbol, vt1: symbol, vt2: symbol)
+.output is_split(IO=stdout)
+is_split(vs, vt1, vt2) :-
+    source_only(vs),
+    target_only(vt1),
+    target_only(vt2),
+    vt1 != vt2,
+    shared_prop(vs, vt1, p1),
+    shared_prop(vs, vt2, p2),
+    p1 != p2,
+    TargetEdge(_, vt1, vt2).
+
+// Auxiliary: vs maps to vt in some split (as either target)
+.decl is_split_target(vs: symbol, vt: symbol)
+is_split_target(vs, vt) :- is_split(vs, vt, _).
+is_split_target(vs, vt) :- is_split(vs, _, vt).
+
+// ADD PROPERTY: one source → one target with additional properties
+.decl is_add_prop(vs: symbol, vt: symbol)
+.output is_add_prop(IO=stdout)
+is_add_prop(v, p) :-
+    !source_only(v),
+    !target_only(v),
+    !is_merge_source(v, _),
+    !is_merge_source(_, v),
+    !is_split_target(v, _),
+    !is_split_target(_, v),
+    tgt_has_prop(v, p),
+    !src_has_prop(v, p).
+
+// REMOVE PROPERTY: one source → one target with fewer properties
+.decl is_remove_prop(vs: symbol, vt: symbol)
+.output is_remove_prop(IO=stdout)
+is_remove_prop(v, p) :-
+    !source_only(v),
+    !target_only(v),
+    !is_merge_source(v, _),
+    !is_merge_source(_, v),
+    !is_split_target(v, _),
+    !is_split_target(_, v),
+    !tgt_has_prop(v, p),
+    src_has_prop(v, p).
+
+// ===========================================================================
+// CONCRETE OPERATIONS
+// ===========================================================================
+
+// Merge
+ConcreteOperation($AddVertex(vt)) :- is_merge(_, _, vt).
+ConcreteOperation($RemoveVertex(vs)) :- is_merge(vs, _, _).
+ConcreteOperation($RemoveVertex(vs)) :- is_merge(_, vs, _).
+ConcreteOperation($RemoveEdge(e)) :- is_merge(vs1, vs2, _), Edge(e, vs1, vs2).
+ConcreteOperation($AddVertexProperty(vt, p, t)) :-
+    is_merge(_, _, vt), TargetVertexProperty(vt, p, t).
+
+// Split
+ConcreteOperation($AddVertex(vt1)) :- is_split(_, vt1, _).
+ConcreteOperation($AddVertex(vt2)) :- is_split(_, _, vt2).
+ConcreteOperation($RemoveVertex(vs)) :- is_split(vs, _, _).
+ConcreteOperation($AddEdge(e, vt1, vt2)) :- is_split(_, vt1, vt2), TargetEdge(e, vt1, vt2).
+ConcreteOperation($AddVertexProperty(vt, p, t)) :-
+    is_split(_, vt, _), TargetVertexProperty(vt, p, t).
+ConcreteOperation($AddVertexProperty(vt, p, t)) :-
+    is_split(_, _, vt), TargetVertexProperty(vt, p, t).
+
+// AddProperty
+ConcreteOperation($AddVertexProperty(v, p, t)) :-
+    is_add_prop(v, p), TargetVertexProperty(v, p, t).
+
+// RemoveProperty
+ConcreteOperation($RemoveVertexProperty(v, p)) :-
+    is_remove_prop(v, p), VertexProperty(vt, p, _).
+
+// ===========================================================================
+// NEXT SEQUENCES: MERGE
+// root = $AddVertex(vt)
+// Sequence: AddVertex(vt) → AddVertexProperty(vt, *)* → RemoveVertex(vs1)
+//         → RemoveVertex(vs2) → RemoveEdge(e)
+// ===========================================================================
+
+// Start → first property
+NextId("merge", $AddVertex(vt), $AddVertex(vt), $AddVertexProperty(vt, p, t)) :-
+    is_merge(_, _, vt),
+    TargetVertexProperty(vt, p, t).
+
+// Property → another property
+NextId("merge", $AddVertex(vt), $AddVertexProperty(vt, p1, t1), $AddVertexProperty(vt, p2, t2)) :-
+    is_merge(_, _, vt),
+    TargetVertexProperty(vt, p1, t1),
+    TargetVertexProperty(vt, p2, t2),
+    p1 != p2.
+
+// Property → remove first source vertex
+NextId("merge", $AddVertex(vt), $AddVertexProperty(vt, p, t), $RemoveVertex(vs1)) :-
+    is_merge(vs1, _, vt),
+    TargetVertexProperty(vt, p, t).
+
+// Property → remove second source vertex
+NextId("merge", $AddVertex(vt), $AddVertexProperty(vt, p, t), $RemoveVertex(vs2)) :-
+    is_merge(_, vs2, vt),
+    TargetVertexProperty(vt, p, t).
+
+// RemoveVertex(vs1) ↔ RemoveVertex(vs2) (either order)
+NextId("merge", $AddVertex(vt), $RemoveVertex(vs1), $RemoveVertex(vs2)) :-
+    is_merge(vs1, vs2, vt).
+NextId("merge", $AddVertex(vt), $RemoveVertex(vs2), $RemoveVertex(vs1)) :-
+    is_merge(vs1, vs2, vt).
+
+// RemoveVertex → RemoveEdge
+NextId("merge", $AddVertex(vt), $RemoveVertex(vs1), $RemoveEdge(e)) :-
+    is_merge(vs1, vs2, vt), Edge(e, vs1, vs2).
+NextId("merge", $AddVertex(vt), $RemoveVertex(vs2), $RemoveEdge(e)) :-
+    is_merge(vs1, vs2, vt), Edge(e, vs1, vs2).
+
+// ===========================================================================
+// NEXT SEQUENCES: SPLIT
+// root = $AddVertex(vt1)  (vt1 is the edge "from" endpoint)
+// Sequence: AddVertex(vt1) → AddVertex(vt2)
+//         → AddVertexProperty(vt1|vt2, *)* → AddEdge → RemoveVertex(vs)
+// ===========================================================================
+
+// Start → AddVertex(vt2)
+NextId("split", $AddVertex(vt1), $AddVertex(vt1), $AddVertex(vt2)) :-
+    is_split(_, vt1, vt2).
+
+// AddVertex(vt2) → property of vt1
+NextId("split", $AddVertex(vt1), $AddVertex(vt2), $AddVertexProperty(vt1, p, t)) :-
+    is_split(_, vt1, vt2),
+    TargetVertexProperty(vt1, p, t).
+
+// AddVertex(vt2) → property of vt2
+NextId("split", $AddVertex(vt1), $AddVertex(vt2), $AddVertexProperty(vt2, p, t)) :-
+    is_split(_, vt1, vt2),
+    TargetVertexProperty(vt2, p, t).
+
+// Property(vt1) → another property of vt1
+NextId("split", $AddVertex(vt1), $AddVertexProperty(vt1, p1, t1), $AddVertexProperty(vt1, p2, t2)) :-
+    is_split(_, vt1, _),
+    TargetVertexProperty(vt1, p1, t1),
+    TargetVertexProperty(vt1, p2, t2),
+    p1 != p2.
+
+// Property(vt1) → property of vt2
+NextId("split", $AddVertex(vt1), $AddVertexProperty(vt1, p1, t1), $AddVertexProperty(vt2, p2, t2)) :-
+    is_split(_, vt1, vt2),
+    TargetVertexProperty(vt1, p1, t1),
+    TargetVertexProperty(vt2, p2, t2).
+
+// Property(vt2) → another property of vt2
+NextId("split", $AddVertex(vt1), $AddVertexProperty(vt2, p1, t1), $AddVertexProperty(vt2, p2, t2)) :-
+    is_split(_, vt1, vt2),
+    TargetVertexProperty(vt2, p1, t1),
+    TargetVertexProperty(vt2, p2, t2),
+    p1 != p2.
+
+// Property(vt2) → AddEdge
+NextId("split", $AddVertex(vt1), $AddVertexProperty(vt2, p, t), $AddEdge(e, vt1, vt2)) :-
+    is_split(_, vt1, vt2),
+    TargetVertexProperty(vt2, p, t),
+    TargetEdge(e, vt1, vt2).
+
+// Property(vt1) → AddEdge (allow edge to follow vt1 props as well)
+NextId("split", $AddVertex(vt1), $AddVertexProperty(vt1, p, t), $AddEdge(e, vt1, vt2)) :-
+    is_split(_, vt1, vt2),
+    TargetVertexProperty(vt1, p, t),
+    TargetEdge(e, vt1, vt2).
+
+// AddEdge → RemoveVertex(vs)
+NextId("split", $AddVertex(vt1), $AddEdge(e, vt1, vt2), $RemoveVertex(vs)) :-
+    is_split(vs, vt1, vt2),
+    TargetEdge(e, vt1, vt2).
+
+// ===========================================================================
+// NEXT SEQUENCES: ADD PROPERTY
+// root = $AddVertexProperty(vt, *)
+// Sequence: AddVertexProperty(vt, *)+
+// ===========================================================================
+
+// Start → two first consecutive properties
+NextId("add_prop", $AddVertexProperty(v, p1, t1), $AddVertexProperty(v, p1, t1), $AddVertexProperty(v, p2, t2)) :-
+    is_add_prop(v, p1),
+    is_add_prop(v, p2),
+    VertexProperty(v, p1, t1),
+    VertexProperty(v, p2, t2),
+    ConcreteOperation($AddVertexProperty(v, p1, t1)),
+    ConcreteOperation($AddVertexProperty(v, p2, t2)).
+
+// Start → two consecutive properties
+NextId("add_prop", $AddVertexProperty(v, p1, t1), $AddVertexProperty(v, p2, t2), $AddVertexProperty(v, p3, t3)) :-
+    is_add_prop(v, p1),
+    is_add_prop(v, p2),
+    is_add_prop(v, p3),
+    VertexProperty(v, p1, t1),
+    VertexProperty(v, p2, t2),
+    VertexProperty(v, p3, t3),
+    ConcreteOperation($AddVertexProperty(v, p1, t1)),
+    ConcreteOperation($AddVertexProperty(v, p2, t2)),
+    ConcreteOperation($AddVertexProperty(v, p3, t3)),
+    NextId("remove_prop", $AddVertexProperty(v, p1, t1), _, $AddVertexProperty(v, p2, t2)).
+
+// ===========================================================================
+// NEXT SEQUENCES: REMOVE PROPERTY
+// root = $RemoveVertexProperty(vt, *)
+// Sequence: RemoveVertexProperty(vt, *)+
+// ===========================================================================
+
+// Start → two first consecutive properties
+NextId("remove_prop", $RemoveVertexProperty(v, p1), $RemoveVertexProperty(v, p1), $RemoveVertexProperty(v, p2)) :-
+    is_remove_prop(v, p1),
+    is_remove_prop(v, p2),
+    ConcreteOperation($RemoveVertexProperty(v, p1)),
+    ConcreteOperation($RemoveVertexProperty(v, p2)).
+
+// Start → two consecutive properties
+NextId("remove_prop", $RemoveVertexProperty(v, p1), $RemoveVertexProperty(v, p2), $RemoveVertexProperty(v, p3)) :-
+    is_remove_prop(v, p1),
+    is_remove_prop(v, p2),
+    is_remove_prop(v, p3),
+    ConcreteOperation($RemoveVertexProperty(v, p1)),
+    ConcreteOperation($RemoveVertexProperty(v, p2)),
+    ConcreteOperation($RemoveVertexProperty(v, p3)),
+    NextId("remove_prop", $RemoveVertexProperty(v, p1), _, $RemoveVertexProperty(v, p2)).

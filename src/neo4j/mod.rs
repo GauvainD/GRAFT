@@ -32,8 +32,8 @@ use std::{
 use neo4rs::{query, Graph, Node, Path, Query, Relation, Txn};
 
 use crate::constants::{
-    AUTOMATON_TIME, GEN_TIME, NEO4J_TIME, NUM_DUP, NUM_TOT, PATH_WEIGHT, SIM_TIME, SOUFFLE_TIME,
-    TOTAL_TIME,
+    AUTOMATON_TIME, BEAM_WIDTH, GEN_TIME, NEO4J_TIME, NUM_DUP, NUM_TOT, PATH_WEIGHT, SIM_TIME,
+    SOUFFLE_TIME, TOTAL_TIME,
 };
 use crate::{
     graph_transformation::GraphTransformation,
@@ -366,9 +366,11 @@ pub async fn write_graph_transformation(
 /// - `key` (`i64`) — the hash key of the selected meta-node
 /// - `n`   (`Vec<Node>`) — all schema vertices reachable via `[:Inner]` edges
 /// - `e`   (`Vec<Relation>`) — all schema edges reachable via `[:Inner]` edges
+///
+/// `beam` controls how many schemas are returned; [`NaiveSource`] ignores it.
 pub trait SourceSelector {
     /// Builds the Cypher query that selects source schemas with the given Neo4j label.
-    fn build_query(label: &str) -> Query;
+    fn build_query(label: &str, beam: usize) -> Query;
 }
 
 /// Fetches **all** schemas that carry `label`, with no ordering or limit.
@@ -377,7 +379,7 @@ pub trait SourceSelector {
 pub struct NaiveSource;
 
 impl SourceSelector for NaiveSource {
-    fn build_query(label: &str) -> Query {
+    fn build_query(label: &str, _beam: usize) -> Query {
         query(&format!(
             "match (s:{selected})
 return
@@ -399,7 +401,7 @@ collect {{ match (s)-[:{inner}]->()-[e:!{inner}]->() return e }} as e;
 pub struct GreedySource;
 
 impl SourceSelector for GreedySource {
-    fn build_query(label: &str) -> Query {
+    fn build_query(label: &str, beam: usize) -> Query {
         query(&format!(
             "match (s:{selected})
 return
@@ -407,12 +409,13 @@ s.{id_prop} as key,
 collect {{ match (s)-[:{inner}]->(n) return n }} as n,
 collect {{ match (s)-[:{inner}]->()-[e:!{inner}]->() return e }} as e
 order by s.{similarity} desc
-limit 1;
+limit {beam};
 ",
             id_prop = KEY_PROP,
             selected = label,
             inner = INNER_LABEL,
-            similarity = SIM_PROP
+            similarity = SIM_PROP,
+            beam = beam
         ))
     }
 }
@@ -429,9 +432,8 @@ limit 1;
 pub struct WeightedDistanceSource;
 
 impl SourceSelector for WeightedDistanceSource {
-    fn build_query(label: &str) -> Query {
+    fn build_query(label: &str, beam: usize) -> Query {
         let weight = PATH_WEIGHT.get().unwrap();
-        //FIXME only get the best one
         query(&format!(
             "match (n:{meta})
 with max(n.{distance}) as maxDist
@@ -441,7 +443,7 @@ s.{id_prop} as key,
 collect {{ match (s)-[:{inner}]->(n) return n }} as n,
 collect {{ match (s)-[:{inner}]->()-[e:!{inner}]->() return e }} as e
 order by {weight}*(s.{distance} / maxDist) + (1 - {weight})*(1 - s.{similarity})
-limit 1;
+limit {beam};
 ",
             id_prop = KEY_PROP,
             selected = label,
@@ -449,7 +451,8 @@ limit 1;
             similarity = SIM_PROP,
             meta = META_LABEL,
             distance = DISTANCE_PROP,
-            weight = weight
+            weight = weight,
+            beam = beam
         ))
     }
 }
@@ -460,8 +463,7 @@ limit 1;
 pub struct RandomSource;
 
 impl SourceSelector for RandomSource {
-    fn build_query(label: &str) -> Query {
-        //FIXME only get the best one
+    fn build_query(label: &str, beam: usize) -> Query {
         query(&format!(
             "match (s:{selected})
 with s, rand() as r
@@ -470,11 +472,12 @@ s.{id_prop} as key,
 collect {{ match (s)-[:{inner}]->(n) return n }} as n,
 collect {{ match (s)-[:{inner}]->()-[e:!{inner}]->() return e }} as e
 order by r
-limit 1;
+limit {beam};
 ",
             id_prop = KEY_PROP,
             selected = label,
             inner = INNER_LABEL,
+            beam = beam
         ))
     }
 }
@@ -496,11 +499,12 @@ pub enum SourceSelectorEnum {
 impl SourceSelectorEnum {
     /// Delegates to the appropriate [`SourceSelector::build_query`] implementation.
     pub fn build_query(&self, label: &str) -> Query {
+        let beam = *BEAM_WIDTH.get().unwrap();
         match self {
-            SourceSelectorEnum::Random => RandomSource::build_query(label),
-            SourceSelectorEnum::Greedy => GreedySource::build_query(label),
-            SourceSelectorEnum::WeightedDistance => WeightedDistanceSource::build_query(label),
-            SourceSelectorEnum::Naive => NaiveSource::build_query(label),
+            SourceSelectorEnum::Random => RandomSource::build_query(label, beam),
+            SourceSelectorEnum::Greedy => GreedySource::build_query(label, beam),
+            SourceSelectorEnum::WeightedDistance => WeightedDistanceSource::build_query(label, beam),
+            SourceSelectorEnum::Naive => NaiveSource::build_query(label, beam),
         }
     }
 }
@@ -672,7 +676,7 @@ async fn compute_paths_async(
 ) {
     let path_query = format!(
         "
-match p=shortest 1 (s:{source})-[:{meta}]-*(t:{target})
+match p=shortest 1 (s:{source})-[:{meta}]->*(t:{target})
 return p;
     ",
         source = source_label,

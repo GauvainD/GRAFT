@@ -1,0 +1,492 @@
+<xm:MappingScenario xmlns:xm="org/vagabond/xmlmodel">
+  <Schemas>
+    <SourceSchema>
+      <Relation name="test_cp_0_nl0_ce0">
+        <Attr>
+          <Name>nut_cp_0_nl0_ae0ke0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>art_cp_0_nl0_ae1</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>nut_cp_0_nl0_ae0ke0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="slope_cp_1_nl0_ce0">
+        <Attr>
+          <Name>measure_cp_1_nl0_ae0ke0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>touch_cp_1_nl0_ae1</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>measure_cp_1_nl0_ae0ke0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="society_me_0_nl0_ce0">
+        <Attr>
+          <Name>compare_me_0_nl0_ae0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>cheese_me_0_nl0_ae0comp1_joinref_0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>cheese_me_0_nl0_ae0comp1_joinref_0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="branch_me_0_nl0_ce1">
+        <Attr>
+          <Name>demand_me_0_nl1_ae0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>cheese_me_0_nl0_ae0comp1_joinattr_0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>cheese_me_0_nl0_ae0comp1_joinattr_0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="affect_vp_0_nl0_ce0">
+        <Attr>
+          <Name>different_vp_0_nl0_ae0ke0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>warn_vp_0_nl0_ae1</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>different_vp_0_nl0_ae0ke0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="past_ad_0_nl0_ce0">
+        <Attr>
+          <Name>wheel_ad_0_nl0_ae0ke0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>letter_ad_0_nl0_ae1</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>wheel_ad_0_nl0_ae0ke0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="night_dl_0_nl0_ce0">
+        <Attr>
+          <Name>find_dl_0_nl0_ae0ke0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>discover_dl_0_nl0_ae1</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>find_dl_0_nl0_ae0ke0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <ForeignKey>
+        <From tableref="society_me_0_nl0_ce0">
+          <Attr>cheese_me_0_nl0_ae0comp1_joinref_0</Attr>
+        </From>
+        <To tableref="branch_me_0_nl0_ce1">
+          <Attr>cheese_me_0_nl0_ae0comp1_joinattr_0</Attr>
+        </To>
+      </ForeignKey>
+    </SourceSchema>
+    <TargetSchema>
+      <Relation name="test_cp_0_nl0_ce0copy0_0">
+        <Attr>
+          <Name>nut_cp_0_nl0_ae0ke0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>art_cp_0_nl0_ae1</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>nut_cp_0_nl0_ae0ke0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="slope_cp_1_nl0_ce0copy1_1">
+        <Attr>
+          <Name>measure_cp_1_nl0_ae0ke0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>touch_cp_1_nl0_ae1</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>measure_cp_1_nl0_ae0ke0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="great_me_0_nl0_ce0">
+        <Attr>
+          <Name>compare_me_0_nl0_ae0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>demand_me_0_nl1_ae0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>cheese_me_0_nl0_ae0comp1_joinattr_0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>cheese_me_0_nl0_ae0comp1_joinattr_0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="red_vp_0_nl0_ce0">
+        <Attr>
+          <Name>different_vp_0_nl0_ae0ke0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>tail_vp_0_nl0_ae0joinattr</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>tail_vp_0_nl0_ae0joinattr</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="wrong_vp_0_nl0_ce1">
+        <Attr>
+          <Name>warn_vp_0_nl0_ae1</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>tail_vp_0_nl0_ae0joinattrref</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>tail_vp_0_nl0_ae0joinattrref</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="blue_ad_0_nl0_ce0">
+        <Attr>
+          <Name>wheel_ad_0_nl0_ae0ke0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>letter_ad_0_nl0_ae1</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>describe_ad_0_nl0_ae2</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <Attr>
+          <Name>report_ad_0_nl0_ae3</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>wheel_ad_0_nl0_ae0ke0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <Relation name="different_dl_0_nl0_ce0">
+        <Attr>
+          <Name>find_dl_0_nl0_ae0ke0</Name>
+          <DataType>TEXT</DataType>
+        </Attr>
+        <PrimaryKey>
+          <Attr>find_dl_0_nl0_ae0ke0</Attr>
+        </PrimaryKey>
+      </Relation>
+      <ForeignKey>
+        <From tableref="wrong_vp_0_nl0_ce1">
+          <Attr>tail_vp_0_nl0_ae0joinattrref</Attr>
+        </From>
+        <To tableref="red_vp_0_nl0_ce0">
+          <Attr>tail_vp_0_nl0_ae0joinattr</Attr>
+        </To>
+      </ForeignKey>
+    </TargetSchema>
+  </Schemas>
+  <Correspondences>
+    <Correspondence id="C0">
+      <From tableref="test_cp_0_nl0_ce0">
+        <Attr>nut_cp_0_nl0_ae0ke0</Attr>
+      </From>
+      <To tableref="test_cp_0_nl0_ce0copy0_0">
+        <Attr>nut_cp_0_nl0_ae0ke0</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C1">
+      <From tableref="test_cp_0_nl0_ce0">
+        <Attr>art_cp_0_nl0_ae1</Attr>
+      </From>
+      <To tableref="test_cp_0_nl0_ce0copy0_0">
+        <Attr>art_cp_0_nl0_ae1</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C2">
+      <From tableref="slope_cp_1_nl0_ce0">
+        <Attr>measure_cp_1_nl0_ae0ke0</Attr>
+      </From>
+      <To tableref="slope_cp_1_nl0_ce0copy1_1">
+        <Attr>measure_cp_1_nl0_ae0ke0</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C3">
+      <From tableref="slope_cp_1_nl0_ce0">
+        <Attr>touch_cp_1_nl0_ae1</Attr>
+      </From>
+      <To tableref="slope_cp_1_nl0_ce0copy1_1">
+        <Attr>touch_cp_1_nl0_ae1</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C4">
+      <From tableref="society_me_0_nl0_ce0">
+        <Attr>compare_me_0_nl0_ae0</Attr>
+      </From>
+      <To tableref="great_me_0_nl0_ce0">
+        <Attr>compare_me_0_nl0_ae0</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C5">
+      <From tableref="branch_me_0_nl0_ce1">
+        <Attr>demand_me_0_nl1_ae0</Attr>
+      </From>
+      <To tableref="great_me_0_nl0_ce0">
+        <Attr>demand_me_0_nl1_ae0</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C6">
+      <From tableref="branch_me_0_nl0_ce1">
+        <Attr>cheese_me_0_nl0_ae0comp1_joinattr_0</Attr>
+      </From>
+      <To tableref="great_me_0_nl0_ce0">
+        <Attr>cheese_me_0_nl0_ae0comp1_joinattr_0</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C7">
+      <From tableref="affect_vp_0_nl0_ce0">
+        <Attr>different_vp_0_nl0_ae0ke0</Attr>
+      </From>
+      <To tableref="red_vp_0_nl0_ce0">
+        <Attr>different_vp_0_nl0_ae0ke0</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C8">
+      <From tableref="affect_vp_0_nl0_ce0">
+        <Attr>warn_vp_0_nl0_ae1</Attr>
+      </From>
+      <To tableref="wrong_vp_0_nl0_ce1">
+        <Attr>warn_vp_0_nl0_ae1</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C9">
+      <From tableref="past_ad_0_nl0_ce0">
+        <Attr>wheel_ad_0_nl0_ae0ke0</Attr>
+      </From>
+      <To tableref="blue_ad_0_nl0_ce0">
+        <Attr>wheel_ad_0_nl0_ae0ke0</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C10">
+      <From tableref="past_ad_0_nl0_ce0">
+        <Attr>letter_ad_0_nl0_ae1</Attr>
+      </From>
+      <To tableref="blue_ad_0_nl0_ce0">
+        <Attr>letter_ad_0_nl0_ae1</Attr>
+      </To>
+    </Correspondence>
+    <Correspondence id="C11">
+      <From tableref="night_dl_0_nl0_ce0">
+        <Attr>find_dl_0_nl0_ae0ke0</Attr>
+      </From>
+      <To tableref="different_dl_0_nl0_ce0">
+        <Attr>find_dl_0_nl0_ae0ke0</Attr>
+      </To>
+    </Correspondence>
+  </Correspondences>
+  <Mappings>
+    <Mapping id="M0">
+      <Uses>
+        <Correspondence ref="C0"/>
+        <Correspondence ref="C1"/>
+      </Uses>
+      <Foreach>
+        <Atom tableref="test_cp_0_nl0_ce0">
+          <Var>a</Var>
+          <Var>b</Var>
+        </Atom>
+      </Foreach>
+      <Exists>
+        <Atom tableref="test_cp_0_nl0_ce0copy0_0">
+          <Var>a</Var>
+          <Var>b</Var>
+        </Atom>
+      </Exists>
+    </Mapping>
+    <Mapping id="M1">
+      <Uses>
+        <Correspondence ref="C2"/>
+        <Correspondence ref="C3"/>
+      </Uses>
+      <Foreach>
+        <Atom tableref="slope_cp_1_nl0_ce0">
+          <Var>a</Var>
+          <Var>b</Var>
+        </Atom>
+      </Foreach>
+      <Exists>
+        <Atom tableref="slope_cp_1_nl0_ce0copy1_1">
+          <Var>a</Var>
+          <Var>b</Var>
+        </Atom>
+      </Exists>
+    </Mapping>
+    <Mapping id="M2">
+      <Uses>
+        <Correspondence ref="C4"/>
+        <Correspondence ref="C5"/>
+        <Correspondence ref="C6"/>
+      </Uses>
+      <Foreach>
+        <Atom tableref="society_me_0_nl0_ce0">
+          <Var>a</Var>
+          <Var>b</Var>
+        </Atom>
+        <Atom tableref="branch_me_0_nl0_ce1">
+          <Var>c</Var>
+          <Var>b</Var>
+        </Atom>
+      </Foreach>
+      <Exists>
+        <Atom tableref="great_me_0_nl0_ce0">
+          <Var>a</Var>
+          <Var>c</Var>
+          <Var>b</Var>
+        </Atom>
+      </Exists>
+    </Mapping>
+    <Mapping id="M3">
+      <Uses>
+        <Correspondence ref="C7"/>
+        <Correspondence ref="C8"/>
+      </Uses>
+      <Foreach>
+        <Atom tableref="affect_vp_0_nl0_ce0">
+          <Var>a</Var>
+          <Var>b</Var>
+        </Atom>
+      </Foreach>
+      <Exists>
+        <Atom tableref="red_vp_0_nl0_ce0">
+          <Var>a</Var>
+          <SKFunction skname="SK0">
+            <Var>a</Var>
+          </SKFunction>
+        </Atom>
+        <Atom tableref="wrong_vp_0_nl0_ce1">
+          <Var>b</Var>
+          <SKFunction skname="SK0">
+            <Var>a</Var>
+          </SKFunction>
+        </Atom>
+      </Exists>
+    </Mapping>
+    <Mapping id="M4">
+      <Uses>
+        <Correspondence ref="C9"/>
+        <Correspondence ref="C10"/>
+      </Uses>
+      <Foreach>
+        <Atom tableref="past_ad_0_nl0_ce0">
+          <Var>a</Var>
+          <Var>b</Var>
+        </Atom>
+      </Foreach>
+      <Exists>
+        <Atom tableref="blue_ad_0_nl0_ce0">
+          <Var>a</Var>
+          <Var>b</Var>
+          <SKFunction skname="SK1">
+            <Var>a</Var>
+          </SKFunction>
+          <SKFunction skname="SK2">
+            <Var>a</Var>
+          </SKFunction>
+        </Atom>
+      </Exists>
+    </Mapping>
+    <Mapping id="M5">
+      <Uses>
+        <Correspondence ref="C11"/>
+      </Uses>
+      <Foreach>
+        <Atom tableref="night_dl_0_nl0_ce0">
+          <Var>a</Var>
+          <Var>b</Var>
+        </Atom>
+      </Foreach>
+      <Exists>
+        <Atom tableref="different_dl_0_nl0_ce0">
+          <Var>a</Var>
+        </Atom>
+      </Exists>
+    </Mapping>
+  </Mappings>
+  <Transformations>
+    <Transformation id="T0" creates="test_cp_0_nl0_ce0copy0_0">
+      <Implements>
+        <Mapping ref="M0"/>
+      </Implements>
+      <Code>SELECT xl0v0.nut_cp_0_nl0_ae0ke0 AS nut_cp_0_nl0_ae0ke0, xl0v0.art_cp_0_nl0_ae1 AS art_cp_0_nl0_ae1
+FROM source.test_cp_0_nl0_ce0 AS xl0v0</Code>
+    </Transformation>
+    <Transformation id="T1" creates="slope_cp_1_nl0_ce0copy1_1">
+      <Implements>
+        <Mapping ref="M1"/>
+      </Implements>
+      <Code>SELECT xl0v0.measure_cp_1_nl0_ae0ke0 AS measure_cp_1_nl0_ae0ke0, xl0v0.touch_cp_1_nl0_ae1 AS touch_cp_1_nl0_ae1
+FROM source.slope_cp_1_nl0_ce0 AS xl0v0</Code>
+    </Transformation>
+    <Transformation id="T2" creates="great_me_0_nl0_ce0">
+      <Implements>
+        <Mapping ref="M2"/>
+      </Implements>
+      <Code>SELECT x0.compare_me_0_nl0_ae0 AS compare_me_0_nl0_ae0, x1.demand_me_0_nl1_ae0 AS demand_me_0_nl1_ae0, x1.cheese_me_0_nl0_ae0comp1_joinattr_0 AS cheese_me_0_nl0_ae0comp1_joinattr_0
+FROM source.society_me_0_nl0_ce0 AS x0, source.branch_me_0_nl0_ce1 AS x1
+WHERE x0.cheese_me_0_nl0_ae0comp1_joinref_0=x1.cheese_me_0_nl0_ae0comp1_joinattr_0</Code>
+    </Transformation>
+    <Transformation id="T3" creates="red_vp_0_nl0_ce0">
+      <Implements>
+        <Mapping ref="M3"/>
+      </Implements>
+      <Code>SELECT x.different_vp_0_nl0_ae0ke0 AS different_vp_0_nl0_ae0ke0, 'sk0' || '|' || x.different_vp_0_nl0_ae0ke0 AS tail_vp_0_nl0_ae0joinattr
+FROM source.affect_vp_0_nl0_ce0 AS x</Code>
+    </Transformation>
+    <Transformation id="T4" creates="wrong_vp_0_nl0_ce1">
+      <Implements>
+        <Mapping ref="M3"/>
+      </Implements>
+      <Code>SELECT x.warn_vp_0_nl0_ae1 AS warn_vp_0_nl0_ae1, 'sk0' || '|' || x.different_vp_0_nl0_ae0ke0 AS tail_vp_0_nl0_ae0joinattrref
+FROM source.affect_vp_0_nl0_ce0 AS x</Code>
+    </Transformation>
+    <Transformation id="T5" creates="blue_ad_0_nl0_ce0">
+      <Implements>
+        <Mapping ref="M4"/>
+      </Implements>
+      <Code>SELECT x.wheel_ad_0_nl0_ae0ke0 AS wheel_ad_0_nl0_ae0ke0, x.letter_ad_0_nl0_ae1 AS letter_ad_0_nl0_ae1, 'sk1' || '|' || x.wheel_ad_0_nl0_ae0ke0 AS describe_ad_0_nl0_ae2, 'sk2' || '|' || x.wheel_ad_0_nl0_ae0ke0 AS report_ad_0_nl0_ae3
+FROM source.past_ad_0_nl0_ce0 AS x</Code>
+    </Transformation>
+    <Transformation id="T6" creates="different_dl_0_nl0_ce0">
+      <Implements>
+        <Mapping ref="M5"/>
+      </Implements>
+      <Code>SELECT x.find_dl_0_nl0_ae0ke0 AS find_dl_0_nl0_ae0ke0
+FROM source.night_dl_0_nl0_ce0 AS x</Code>
+    </Transformation>
+  </Transformations>
+</xm:MappingScenario>

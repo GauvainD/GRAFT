@@ -1,0 +1,119 @@
+.decl node_s(n: symbol)
+
+.decl prop_s(n: symbol, p: symbol)
+
+.decl node_t(n: symbol)
+
+.decl prop_t(n: symbol, p: symbol)
+
+.type Operation = Newnode{n: symbol}
+                | Delnode{n: symbol}
+                | Addprop{n: symbol, p: symbol}
+                | Delprop{n: symbol, p: symbol}
+
+.decl Valid(o: Operation)
+.output Valid(IO=stdout)
+
+.decl Next(r: Operation, p: Operation, n: Operation)
+.output Next(IO=stdout)
+
+node_s("orig").
+
+prop_s("orig", "p1").
+prop_s("orig", "p2").
+prop_s("orig", "p3").
+prop_s("orig", "p4").
+
+node_t("left").
+node_t("right").
+
+prop_t("left", "p1").
+prop_t("left", "p2").
+prop_t("right", "p3").
+prop_t("right", "p4").
+
+node_s("other").
+prop_s("other", "p").
+
+node_t("other_t").
+prop_t("other", "p_t").
+
+.decl is_split(orig: symbol, left: symbol, right: symbol)
+
+is_split(n, l, r):-
+    node_s(n),
+    !node_t(n),
+    node_t(l),
+    !node_s(l),
+    node_t(r),
+    !node_s(r),
+    prop_s(n, p1),
+    prop_s(n, p2),
+    prop_t(l, p1),
+    prop_t(r, p2),
+    p1 != p2,
+    n != l,
+    n != r,
+    l != r.
+
+Valid($Newnode(n)):-
+    is_split(_, n, _).
+
+Valid($Newnode(n)):-
+    is_split(_, _, n).
+
+Valid($Delnode(n)):-
+    is_split(n, _, _).
+
+Valid($Delprop(n, p)):-
+    is_split(n, l, _),
+    prop_s(n, p),
+    prop_t(l, p).
+
+Valid($Delprop(n, p)):-
+    is_split(n, _, r),
+    prop_s(n, p),
+    prop_t(r, p).
+
+Valid($Addprop(n, p)):-
+    is_split(x, n, _),
+    prop_s(x, p),
+    prop_t(n, p).
+
+Valid($Addprop(n, p)):-
+    is_split(x, _, n),
+    prop_s(x, p),
+    prop_t(n, p).
+
+Next($Newnode(l), $Newnode(l), $Newnode(r)):-
+    is_split(_, l, r).
+
+Next($Newnode(l), $Newnode(r), $Addprop(l, p)):-
+    is_split(n, l, r),
+    prop_s(n, p),
+    prop_t(l, p).
+
+Next($Newnode(l), $Addprop(l, p1), $Addprop(l, p2)):-
+    is_split(n, l, _),
+    prop_t(l, p1),
+    prop_s(n, p2),
+    prop_t(l, p2),
+    p1 != p2.
+
+Next($Newnode(l), $Addprop(l, p1), $Addprop(r, p2)):-
+    is_split(n, l, r),
+    prop_t(l, p1),
+    prop_s(n, p2),
+    prop_t(r, p2),
+    p1 != p2.
+
+Next($Newnode(l), $Addprop(r, p1), $Addprop(r, p2)):-
+    is_split(n, l, r),
+    prop_t(r, p1),
+    prop_s(n, p2),
+    prop_t(r, p2),
+    p1 != p2.
+
+Next($Newnode(l), $Addprop(r, p), $Delnode(n)):-
+    is_split(n, l, r),
+    prop_t(r, p).
