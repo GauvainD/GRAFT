@@ -32,3 +32,5 @@ pub mod similarity;
 pub mod transformation;
 /// Automaton construction from Souffle `Next` relations, clique contraction, and graph iteration.
 pub mod transformation_automaton;
+/// Types and constraint management
+pub mod constraints;

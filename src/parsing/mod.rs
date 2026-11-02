@@ -5,7 +5,10 @@ use pest::{iterators::Pair, Parser};
 use pest_derive::Parser;
 use petgraph::graph::NodeIndex;
 
-use crate::property_graph::{Properties, PropertyGraph};
+use crate::{
+    constraints::{Constraint, Type},
+    property_graph::{Properties, PropertyGraph},
+};
 
 /// Parser for the pgschema format
 #[derive(Parser)]
@@ -15,7 +18,7 @@ pub struct PropertyGraphParser;
 impl PropertyGraphParser {
     /// Converts a pgschema string to a PropertyGraph
     pub fn convert_text(&self, input: &str) -> Vec<PropertyGraph> {
-        let mut res : Vec<PropertyGraph> = PropertyGraphParser::parse(Rule::schemas, input)
+        let mut res: Vec<PropertyGraph> = PropertyGraphParser::parse(Rule::schemas, input)
             .unwrap()
             .next()
             .unwrap()
@@ -86,6 +89,54 @@ impl PropertyGraphParser {
         }
     }
 
+    fn build_constraint(&self, v: Pair<'_, Rule>, c: &mut Constraint) {
+        match v.as_rule() {
+            Rule::constraint => v.into_inner().for_each(|i| self.build_constraint(i, c)),
+            Rule::constraintMatch => v.into_inner().for_each(|i| self.build_constraint(i, c)),
+            Rule::constraintElem => v.into_inner().for_each(|i| self.build_constraint(i, c)),
+            Rule::constraintWithin => v.into_inner().for_each(|i| self.build_constraint(i, c)),
+            Rule::constraintWhere => v.into_inner().for_each(|i| self.build_constraint(i, c)),
+            Rule::constraintProp => {
+                let mut pairs = v.into_inner();
+                let mut var = pairs.next().unwrap().as_str().to_string();
+                let mut prop = pairs.next().unwrap().as_str().to_string();
+                c.add_prop(var, prop);
+            }
+            Rule::constraintVar => {
+                let var = v.as_str().to_string();
+                c.add_var(var, None);
+            }
+            Rule::edgeMatch => {
+                let mut pairs = v.into_inner();
+                self.build_constraint(pairs.next().unwrap(), c);
+                let edge = pairs.next().unwrap();
+                self.build_constraint(pairs.next().unwrap(), c);
+                pairs = edge.into_inner();
+                let var = pairs.next().unwrap().as_str().to_string();
+                let var_type = pairs.next().map(|v| Type::Edge { typename: v.as_str().to_string()});
+                c.add_var(var, var_type);
+            },
+            Rule::edgeNodeMatch => v.into_inner().for_each(|i| self.build_constraint(i, c)),
+            Rule::edgeTypeMatch => {
+                let mut pairs = v.into_inner();
+                let var = pairs.next().unwrap().as_str().to_string();
+                let var_type = pairs.next().map(|v| Type::Node { typename: v.as_str().to_string()});
+                c.add_var(var, var_type);
+            },
+            Rule::nodeMatch => {
+                let mut pairs = v.into_inner();
+                let var = pairs.next().unwrap().as_str().to_string();
+                let var_type = Type::Node {
+                    typename: pairs.next().unwrap().as_str().to_string(),
+                };
+                c.add_var(var, Some(var_type));
+            },
+            _ => {
+                println!("{:?}", v)
+            }
+        }
+    }
+
     /// From the results of parsing, populates the provided property graph and the map from node
     /// name to node index.
     fn handle_result(
@@ -104,10 +155,10 @@ impl PropertyGraphParser {
             Rule::graphTypeElements => v
                 .into_inner()
                 .for_each(|i| self.handle_result(i, graph, names)),
-            Rule::elementTypes => v
+            Rule::elements => v
                 .into_inner()
                 .for_each(|i| self.handle_result(i, graph, names)),
-            Rule::elementType => v
+            Rule::element => v
                 .into_inner()
                 .for_each(|i| self.handle_result(i, graph, names)),
             Rule::nodeType => {
@@ -175,6 +226,11 @@ impl PropertyGraphParser {
                 for label in labels {
                     graph.edge_label.add_label_mapping(&edge, label).unwrap();
                 }
+            }
+            Rule::constraint => {
+                let mut c = Constraint::new(v.as_span().as_str().to_owned());
+                self.build_constraint(v, &mut c);
+                println!("{:?}\n", c);
             }
             _ => (),
         }
