@@ -1,6 +1,6 @@
 //! Module dedicated to GraphTransformation. These represent a schema being transformed and the
 //! result of a transformation.
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::{HashMap, HashSet}, fmt::Display};
 
 use log::error;
 use petgraph::{
@@ -9,7 +9,10 @@ use petgraph::{
 };
 
 use crate::{
-    constants::IDEMPOTENCE, property_graph::{Properties, PropertyGraph}, transformation::Operation
+    constants::IDEMPOTENCE,
+    constraints::{Constraint, Type},
+    property_graph::{Properties, PropertyGraph},
+    transformation::Operation,
 };
 
 /// All data for a single transformation.
@@ -33,6 +36,8 @@ pub struct GraphTransformation {
     label_node_ids: HashMap<String, u32>,
     /// Maps each edge label to its index
     label_edge_ids: HashMap<String, u32>,
+    /// Constraints based on id
+    pub constraints: HashMap<String, Constraint>,
 }
 
 impl From<&PropertyGraph> for GraphTransformation {
@@ -64,6 +69,12 @@ impl From<&PropertyGraph> for GraphTransformation {
                 .labels()
                 .map(|&id| (g.edge_label.get_label(id).unwrap().clone(), id))
                 .collect(),
+            constraints: g
+                .constraints
+                .iter()
+                .enumerate()
+                .map(|(n, c)| (format!("S{}", n), c.clone()))
+                .collect(),
         }
     }
 }
@@ -90,12 +101,12 @@ impl Clone for GraphTransformation {
             edge_ids: self.edge_ids.clone(),
             label_node_ids: self.label_node_ids.clone(),
             label_edge_ids: self.label_edge_ids.clone(),
+            constraints: self.constraints.clone(),
         }
     }
 }
 
 impl GraphTransformation {
-
     /// Transforms the resulting schema by applying the given operation. If IDEMPOTENCE is set to
     /// true, operations that do not change the schema will be ignored. Otherwise, None will be
     /// returned.
@@ -121,7 +132,8 @@ impl GraphTransformation {
                 let vertex = self.node_ids.get(v);
                 let label = self.label_node_ids.get(l);
                 if let (Some(vertex), Some(label)) = (vertex, label) {
-                    let res = self.result
+                    let res = self
+                        .result
                         .vertex_label
                         .remove_label_mapping(vertex, *label)
                         .ok();
@@ -148,7 +160,8 @@ impl GraphTransformation {
                 let edge = self.edge_ids.get(e);
                 let label = self.label_edge_ids.get(l);
                 if let (Some(edge), Some(label)) = (edge, label) {
-                    let res = self.result
+                    let res = self
+                        .result
                         .edge_label
                         .remove_label_mapping(edge, *label)
                         .ok();
@@ -201,7 +214,7 @@ impl GraphTransformation {
                 }
             }
             Operation::RemoveEdge(e) => {
-                if let Some(index) =  self.edge_ids.get(e) {
+                if let Some(index) = self.edge_ids.get(e) {
                     self.result.edge_label.remove_element(index);
                     self.result.graph.remove_edge(*index);
                     self.edge_ids.remove(e);
@@ -226,6 +239,7 @@ impl GraphTransformation {
                 prop.map.remove(name);
             }
             Operation::RenameVertex(v, name) => {
+                //FIXME: constraints
                 if let Some(id) = self.node_ids.get(v) {
                     let prop = self.result.graph.node_weight_mut(*id)?;
                     prop.name.clone_from(name);
@@ -234,6 +248,7 @@ impl GraphTransformation {
                 }
             }
             Operation::RenameEdge(e, name) => {
+                //FIXME: constraints
                 if let Some(id) = self.edge_ids.get(e) {
                     let prop = self.result.graph.edge_weight_mut(*id)?;
                     prop.name.clone_from(name);
@@ -277,9 +292,52 @@ impl GraphTransformation {
                 self.result.edge_label.remove_element(edgeindex);
                 self.edge_ids.insert(e.clone(), new_index);
             }
+            Operation::AddConstraint(ident) => {
+                //FIXME: Check for duplicated constraints and check text
+                let constraint = self.constraints.get(ident)?;
+                let type_convert: HashMap<Type, Type> = constraint
+                    .types
+                    .iter()
+                    .map(|t| {
+                        let newtype: Option<Type> = match t {
+                            Type::Node { name, .. } => Some(Type::Node {
+                                id: *(self.node_ids.get(name)?),
+                                name: name.clone(),
+                            }),
+                            Type::Edge { name, .. } => Some(Type::Edge {
+                                id: *(self.edge_ids.get(name)?),
+                                name: name.clone(),
+                            }),
+                        };
+                        Some((t.clone(), newtype?))
+                    })
+                    .collect::<Option<HashMap<Type, Type>>>()?;
+                let newvars = constraint.vars.iter().map(|(var, t)| {
+                    Some((
+                            var.clone(),
+                            t.as_ref().and_then(|t| type_convert.get(t).cloned())
+                            ))
+                }).collect::<Option<HashMap<String, Option<Type>>>>()?;
+                let newprops = constraint.props.iter().map(|(t, p)| {
+                    Some((
+                            type_convert.get(t)?.clone(),
+                            p.clone()
+                            ))
+                }).collect::<Option<HashMap<Type, HashSet<String>>>>()?;
+                let new_types = type_convert.iter().map(|(_, x)| x.clone()).collect();
+                let new_constraint = Constraint {
+                    text: constraint.text.clone(),
+                    vars: newvars,
+                    types: new_types,
+                    props: newprops
+                };
+                if !new_constraint.validate(&(self.result)) {
+                    return None;
+                }
+                self.result.constraints.push(new_constraint);
+            }
         }
         self.operations.push(format!("{:?}", op));
         Some(())
     }
-
 }

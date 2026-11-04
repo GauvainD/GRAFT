@@ -17,6 +17,8 @@ use petgraph::{
 };
 use thiserror::Error;
 
+use crate::constraints::Constraint;
+
 /// The type of labels
 type Label = String;
 /// The type of label ids
@@ -253,6 +255,8 @@ pub struct PropertyGraph {
     pub vertex_label: LabelMap<NodeIndex>,
     /// Maps edges to labels
     pub edge_label: LabelMap<EdgeIndex>,
+    /// Constraints
+    pub constraints: Vec<Constraint>
 }
 
 impl PropertyGraph {
@@ -317,6 +321,9 @@ impl Display for PropertyGraph {
             self.display_label_prop(f, &labels, props)?;
             writeln!(f, " ]->")?;
             writeln!(f, "(:{}),", names.get(&to).unwrap())?;
+        }
+        for c in self.constraints.iter() {
+            writeln!(f, "{},", c)?;
         }
         writeln!(f, "}}")
     }

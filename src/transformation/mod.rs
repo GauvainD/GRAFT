@@ -58,6 +58,8 @@ pub enum OperationName {
     MoveEdgeTarget,
     /// Move an edge type's source endpoint to a different vertex type.
     MoveEdgeSource,
+    /// Adds a constraint either from source or target
+    AddConstraint,
 }
 
 impl From<Operation> for OperationName {
@@ -79,6 +81,7 @@ impl From<Operation> for OperationName {
             Operation::RenameEdge(_, _) => Self::RenameEdge,
             Operation::MoveEdgeTarget(_, _) => Self::MoveEdgeTarget,
             Operation::MoveEdgeSource(_, _) => Self::MoveEdgeSource,
+            Operation::AddConstraint(_) => Self::AddConstraint,
         }
     }
 }
@@ -103,6 +106,7 @@ impl OperationName {
             OperationName::RenameEdge => "RenameEdge",
             OperationName::MoveEdgeTarget => "MoveEdgeTarget",
             OperationName::MoveEdgeSource => "MoveEdgeSource",
+            OperationName::AddConstraint => "AddConstraint",
         }
     }
 
@@ -125,6 +129,7 @@ impl OperationName {
             OperationName::RenameEdge => 2,
             OperationName::MoveEdgeTarget => 2,
             OperationName::MoveEdgeSource => 2,
+            OperationName::AddConstraint => 1,
         }
     }
 }
@@ -149,6 +154,7 @@ lazy_static! {
             OperationName::RemoveVertexProperty,
             OperationName::RemoveVertexLabel,
             OperationName::RemoveVertex,
+            OperationName::AddConstraint,
         ];
         names.sort_by(|name1, name2| name1.symbol().cmp(name2.symbol()));
         names
@@ -202,6 +208,8 @@ pub enum Operation {
     MoveEdgeTarget(String, String),
     /// `(edge_name, new_source_vertex_name)` — redirect an edge type's source endpoint.
     MoveEdgeSource(String, String),
+    /// `(constraint_name)` — Adds the given constraint
+    AddConstraint(String),
 }
 
 /// Generates transformations from a schema g and a program
@@ -211,7 +219,7 @@ pub fn transform_graph(
     target_graph: &Option<PropertyGraph>,
 ) -> Option<TransformGeneratorGraph> {
     if let Some(graph) = generate_operation_automaton(program, g, target_graph) {
-        Some(TransformGeneratorGraph::new(graph, g))
+        Some(TransformGeneratorGraph::new(graph, g, target_graph))
     } else {
         None
     }

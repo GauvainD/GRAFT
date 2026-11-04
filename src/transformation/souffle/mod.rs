@@ -393,6 +393,9 @@ impl Operation {
                 args.pop_front()?,
                 args.pop_front()?,
             )),
+            OperationName::AddConstraint => Some(Operation::AddConstraint(
+                args.pop_front()?,
+            )),
         }
     }
 }

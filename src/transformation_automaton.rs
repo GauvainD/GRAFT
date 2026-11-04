@@ -338,17 +338,28 @@ pub struct TransformGeneratorGraph {
 impl TransformGeneratorGraph {
     /// Wraps `automaton` and `g` into an iterator that performs a DFS over all valid
     /// transformation sequences, yielding each intermediate and final [`GraphTransformation`].
-    pub fn new(automaton: TransformationAutomaton, g: &PropertyGraph) -> Self {
+    pub fn new(
+        automaton: TransformationAutomaton,
+        g: &PropertyGraph,
+        t: &Option<PropertyGraph>,
+    ) -> Self {
         for edge in automaton.graph.edge_references() {
             let src = automaton.graph[edge.source()].clone();
             let dst = automaton.graph[edge.target()].clone();
         }
         let starts = automaton.start.clone().into();
+        let mut gt: GraphTransformation = g.into();
+        gt.constraints.extend(t.iter().flat_map(|v| {
+            v.constraints
+                .iter()
+                .enumerate()
+                .map(|(n, v)| (format!("T{}", n), v.clone()))
+        }));
         TransformGeneratorGraph {
             automaton,
             starts,
             list: VecDeque::new(),
-            g: g.into(),
+            g: gt,
             seen: HashSet::new(),
             current_path: Vec::new(),
             generator: None,
