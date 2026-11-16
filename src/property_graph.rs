@@ -323,7 +323,7 @@ impl Display for PropertyGraph {
             writeln!(f, "(:{}),", names.get(&to).unwrap())?;
         }
         for c in self.constraints.iter() {
-            writeln!(f, "{},", c)?;
+            writeln!(f, "{},", c.text(self, false))?;
         }
         writeln!(f, "}}")
     }
@@ -415,6 +415,12 @@ impl Hash for PropertyGraph {
         node_names.sort_by(|(_, name1), (_, name2)| name1.cmp(name2));
         for (node_id, node_name) in node_names.into_iter() {
             hash_node(node_name, node_id, &self, state);
+        }
+        if !self.constraints.is_empty() {
+            let mut constraints: Vec<String> =
+                self.constraints.iter().map(|c| c.text(self, true)).collect();
+            constraints.sort();
+            constraints.into_iter().for_each(|c| c.hash(state));
         }
     }
 }

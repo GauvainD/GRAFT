@@ -60,6 +60,8 @@ pub enum OperationName {
     MoveEdgeSource,
     /// Adds a constraint either from source or target
     AddConstraint,
+    /// Removes a constraint of the schema
+    RemoveConstraint,
 }
 
 impl From<Operation> for OperationName {
@@ -82,6 +84,7 @@ impl From<Operation> for OperationName {
             Operation::MoveEdgeTarget(_, _) => Self::MoveEdgeTarget,
             Operation::MoveEdgeSource(_, _) => Self::MoveEdgeSource,
             Operation::AddConstraint(_) => Self::AddConstraint,
+            Operation::RemoveConstraint(_) => Self::RemoveConstraint,
         }
     }
 }
@@ -107,6 +110,7 @@ impl OperationName {
             OperationName::MoveEdgeTarget => "MoveEdgeTarget",
             OperationName::MoveEdgeSource => "MoveEdgeSource",
             OperationName::AddConstraint => "AddConstraint",
+            OperationName::RemoveConstraint => "RemoveConstraint",
         }
     }
 
@@ -130,6 +134,7 @@ impl OperationName {
             OperationName::MoveEdgeTarget => 2,
             OperationName::MoveEdgeSource => 2,
             OperationName::AddConstraint => 1,
+            OperationName::RemoveConstraint => 1,
         }
     }
 }
@@ -155,6 +160,7 @@ lazy_static! {
             OperationName::RemoveVertexLabel,
             OperationName::RemoveVertex,
             OperationName::AddConstraint,
+            OperationName::RemoveConstraint,
         ];
         names.sort_by(|name1, name2| name1.symbol().cmp(name2.symbol()));
         names
@@ -208,8 +214,11 @@ pub enum Operation {
     MoveEdgeTarget(String, String),
     /// `(edge_name, new_source_vertex_name)` — redirect an edge type's source endpoint.
     MoveEdgeSource(String, String),
-    /// `(constraint_name)` — Adds the given constraint
+    /// `(constraint_id)` — add a constraint of the source or target schema. The identifier is
+    /// the canonical text of the constraint.
     AddConstraint(String),
+    /// `(constraint_id)` — remove a constraint of the schema.
+    RemoveConstraint(String),
 }
 
 /// Generates transformations from a schema g and a program

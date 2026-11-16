@@ -23,6 +23,7 @@ probminhash = "0.1.11"
 rand = "0.9.1"
 quick-xml = { version = "0.39.2", features = ["serde", "serialize"] }
 regex = "1.12.3"
+smallvec = "1.13"
 
 [build-dependencies]
 cxx-build = "1.0.119"

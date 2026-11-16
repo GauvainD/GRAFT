@@ -1,0 +1,127 @@
+.include "definitions.dl"
+
+// Example for examples/orders-src.pgschema and examples/orders-tgt.pgschema.
+//
+// The source stores the city of a customer and the customer of an order as properties. The
+// target turns them into a City type and two edge types. Constraints follow the data:
+//   removed  FOR (c:customerType) EXCLUSIVE c.email          (strengthened to IDENTIFIER)
+//            FOR (c:customerType) MANDATORY c.zip            (zip moves to cityType)
+//            FOR (o:orderType) MANDATORY c.id WITHIN (c:customerType) WHERE c.id = o.customer
+//                                                            (foreign key replaced by an edge)
+//   added    FOR (c:customerType) IDENTIFIER c.email
+//            FOR (c:cityType) IDENTIFIER c.zip
+//            FOR (o:orderType) MANDATORY SINGLETON p WITHIN (o)-[p:placedBy]->(:customerType)
+//            FOR (c:customerType) MANDATORY l WITHIN (c)-[l:livesIn]->()
+//   kept     the identifiers on customerType.id and orderType.id
+//
+// An edge needs both of its endpoints, so the edges to cityType are only produced once cityType
+// was added by a previous round.
+
+// ---------------------------------------------------------------------------------------------
+// Edit operations
+// ---------------------------------------------------------------------------------------------
+
+ConcreteOperation($AddConstraint(c)) :-
+    TargetConstraint(c), !Constraint(c).
+
+ConcreteOperation($RemoveConstraint(c)) :-
+    Constraint(c), !TargetConstraint(c).
+
+ConcreteOperation($AddVertex(v)) :-
+    TargetVertex(v), !Vertex(v).
+
+ConcreteOperation($AddVertexLabel(v, l)) :-
+    ConcreteOperation($AddVertex(v)),
+    TargetVertexHasLabel(v, l).
+
+ConcreteOperation($AddVertexProperty(v, p, t)) :-
+    ConcreteOperation($AddVertex(v)),
+    TargetVertexProperty(v, p, t).
+
+ConcreteOperation($AddEdge(e, f, t)) :-
+    TargetEdge(e, f, t),
+    Vertex(f),
+    Vertex(t),
+    !Edge(e, _, _).
+
+ConcreteOperation($AddEdgeLabel(e, l)) :-
+    ConcreteOperation($AddEdge(e, _, _)),
+    TargetEdgeHasLabel(e, l).
+
+ConcreteOperation($RemoveVertexProperty(v, p)) :-
+    VertexProperty(v, p, _),
+    TargetVertex(v),
+    !TargetVertexProperty(v, p, _).
+
+// ---------------------------------------------------------------------------------------------
+// new-type: add a vertex type, its label, its properties and then the constraints on them.
+//   AddVertex(cityType), AddVertexLabel(cityType, City),
+//   AddVertexProperty(cityType, name, string), AddVertexProperty(cityType, zip, string),
+//   AddConstraint(FOR (c:cityType) IDENTIFIER c.zip)
+// ---------------------------------------------------------------------------------------------
+
+NextId("new-type", $AddVertex(v), $AddVertex(v), $AddVertexLabel(v, l)) :-
+    ConcreteOperation($AddVertex(v)),
+    ConcreteOperation($AddVertexLabel(v, l)).
+
+NextId("new-type", $AddVertex(v), $AddVertexLabel(v, l), $AddVertexProperty(v, p, t)) :-
+    ConcreteOperation($AddVertexLabel(v, l)),
+    ConcreteOperation($AddVertexProperty(v, p, t)).
+
+// The properties of a type commute: any subset of them can be added.
+NextId("new-type", $AddVertex(v), $AddVertexProperty(v, p1, t1), $AddVertexProperty(v, p2, t2)) :-
+    ConcreteOperation($AddVertexProperty(v, p1, t1)),
+    ConcreteOperation($AddVertexProperty(v, p2, t2)),
+    p1 != p2.
+
+// A constraint that still lacks something (another property, an edge) is rejected when applied.
+NextId("new-type", $AddVertex(v), $AddVertexProperty(v, p, t), $AddConstraint(c)) :-
+    ConcreteOperation($AddVertexProperty(v, p, t)),
+    ConcreteOperation($AddConstraint(c)),
+    TargetConstraintUsesVertexProperty(c, v, p).
+
+// ---------------------------------------------------------------------------------------------
+// new-edge: add an edge type, its label and then the constraints whose pattern goes through it.
+//   AddEdge(placedBy, orderType, customerType), AddEdgeLabel(placedBy, PLACED_BY),
+//   AddConstraint(FOR (o:orderType) MANDATORY SINGLETON p WITHIN (o)-[p:placedBy]->(:customerType))
+// ---------------------------------------------------------------------------------------------
+
+NextId("new-edge", $AddEdge(e, f, t), $AddEdge(e, f, t), $AddEdgeLabel(e, l)) :-
+    ConcreteOperation($AddEdge(e, f, t)),
+    ConcreteOperation($AddEdgeLabel(e, l)).
+
+NextId("new-edge", $AddEdge(e, f, t), $AddEdgeLabel(e, l), $AddConstraint(c)) :-
+    ConcreteOperation($AddEdge(e, f, t)),
+    ConcreteOperation($AddEdgeLabel(e, l)),
+    ConcreteOperation($AddConstraint(c)),
+    TargetConstraintUsesEdge(c, e).
+
+// ---------------------------------------------------------------------------------------------
+// drop-property: a property used by a constraint cannot be removed, the constraint goes first.
+//   RemoveConstraint(FOR (c:customerType) MANDATORY c.zip), RemoveVertexProperty(customerType, zip)
+//   RemoveConstraint(FOR (o:orderType) MANDATORY c.id WITHIN ...),
+//       RemoveVertexProperty(orderType, customer)
+//   RemoveVertexProperty(customerType, city)
+// ---------------------------------------------------------------------------------------------
+
+NextId("drop-property", $RemoveConstraint(c), $RemoveConstraint(c), $RemoveVertexProperty(v, p)) :-
+    ConcreteOperation($RemoveConstraint(c)),
+    ConcreteOperation($RemoveVertexProperty(v, p)),
+    ConstraintUsesVertexProperty(c, v, p).
+
+NextId("drop-property", $RemoveVertexProperty(v, p), $RemoveVertexProperty(v, p), $RemoveVertexProperty(v, p)) :-
+    ConcreteOperation($RemoveVertexProperty(v, p)),
+    !ConstraintUsesVertexProperty(_, v, p).
+
+// ---------------------------------------------------------------------------------------------
+// constraint: add or remove a single constraint, the rest of the schema being unchanged.
+//   RemoveConstraint(FOR (c:customerType) EXCLUSIVE c.email)
+//   AddConstraint(FOR (c:customerType) IDENTIFIER c.email)
+// ---------------------------------------------------------------------------------------------
+
+NextId("constraint", $AddConstraint(c), $AddConstraint(c), $AddConstraint(c)) :-
+    ConcreteOperation($AddConstraint(c)),
+    !TargetConstraintBlocked(c).
+
+NextId("constraint", $RemoveConstraint(c), $RemoveConstraint(c), $RemoveConstraint(c)) :-
+    ConcreteOperation($RemoveConstraint(c)).

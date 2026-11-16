@@ -132,6 +132,42 @@ Input schemas are expected to be using the PGSchema format. See
 are written in pairs of source/result, separated by `===`. The schemas are in
 PGSchema format.
 
+### Constraints
+
+A graph type can end with constraints, after all node and edge types. One notation covers
+pg-keys and graph generating dependencies (GGD):
+
+```
+FOR <matches> [WHERE <conditions>] <qualifiers> [<keys>] [WITHIN <matches>] [WHERE <conditions>]
+```
+
+- `<matches>` is a comma-separated conjunction of node matches `(x: nodeType & Label)` and edge
+  matches `(x)-[e: edgeType & Label]->(y)` sharing variables. The variable, the type and the
+  labels are all optional; the type is the name of a node or edge type of the schema. A variable
+  is typed once and can be reused bare.
+- `<qualifiers>` is one or more of `EXCLUSIVE`, `MANDATORY`, `SINGLETON` (or `IDENTIFIER` for all
+  three), applied to the tuple `<keys>` of variables (`e`) and properties (`x.id`).
+- `<conditions>` are comparisons (`=`, `<>`, `<`, `>`, `<=`, `>=`) joined by `AND`. Operands are
+  variables, properties, constants or `DIST(a, b)`.
+- The named variables of the `FOR` side are universally quantified. Variables that only appear in
+  the `WITHIN` side, and anonymous ones, are existential. A GGD is therefore a `MANDATORY`
+  constraint with a pattern in `WITHIN`.
+
+```
+CREATE GRAPH TYPE {
+    (person: Person { id INT, name STRING }),
+    (city: City { name STRING }),
+    (:person)-[lives: LivesIn { since INT }]->(:city),
+    FOR (p: person) IDENTIFIER p.id,
+    FOR (p: person) MANDATORY l WITHIN (p)-[l: lives]->(),
+    FOR (p: person), (c: city) WHERE DIST(p.name, c.name) <= 1
+    MANDATORY l.since WITHIN (p)-[l: lives]->(c)
+}
+```
+
+Two constraints are the same if they only differ by the names of their variables. The order of
+the matches matters.
+
 ## Retrieving results from Neo4j
 
 Schemas are stored as property graphs. Node/edge type names are kept in a
@@ -153,7 +189,7 @@ full concatenated `operations` list.
 
 ## Datalog programs
 
-The `datalog` folder contains two examples of meta-transformations. The
+The `datalog` folder contains examples of meta-transformations. The
 `persondata.dl.example` example implements two generic meta-transformations. The
 `icij.dl.example` implements more complex meta-transformations for the ICJ
 dataset and displays the use of ids to prevent rules being mixed together after
@@ -168,6 +204,29 @@ can follow `e`. This allows having multiple meta-transformations in the same
 program.
 - `NextId`: Equivalent to `Next` but allows for an additional id to
 further differentiate between different meta-transformations.
+
+### Constraints in Datalog
+
+Constraints are added and removed with the edit operations `AddConstraint(c)` and
+`RemoveConstraint(c)`, where `c` is the canonical text of the constraint. The same constraint has
+the same identifier in the source and target schemas, so constraints compare like vertices:
+
+```
+ConcreteOperation($AddConstraint(c)) :-
+    TargetConstraint(c), !Constraint(c), !TargetConstraintBlocked(c).
+ConcreteOperation($RemoveConstraint(c)) :-
+    Constraint(c), !TargetConstraint(c).
+```
+
+Each pattern is given to the program as a small graph (`PatternNode`, `PatternEdge`,
+`PatternType`, `PatternLabel`), with `ConstraintQualifier`, `ConstraintKey`, `Condition` and
+`ConditionTerm` for the rest, and a `Target` version of each relation. `definitions.dl` documents
+them and derives helpers such as `ConstraintUsesVertex`, `ConstraintUsesVertexProperty` and
+`TargetConstraintBlocked`. See `constraints.dl.example`.
+
+An edit operation that removes a type, property or label used by a constraint of the schema, or
+moves an edge so that a pattern no longer fits, is rejected: the program must remove the
+constraint first. Renaming a type keeps its constraints.
 
 The reason for this implementation can be illustrated from the example below
 where two meta-transformations are evaluated. The first one produces

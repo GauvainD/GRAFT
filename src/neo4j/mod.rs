@@ -11,6 +11,10 @@
 //! identified, a `"Path"` edge is created directly from the source meta-node to the best
 //! target meta-node, with the concatenated operation list.
 //!
+//! The constraints of a schema are stored on its meta-node, in the `constraints` property: a
+//! list with the text of each constraint, which refers to the schema types by their `_name`.
+//! They are parsed and bound to the schema again when it is read back.
+//!
 //! # Node Labels Used as State Flags
 //!
 //! | Label      | Meaning                                                    |
@@ -37,6 +41,7 @@ use crate::constants::{
 };
 use crate::{
     graph_transformation::GraphTransformation,
+    parsing::PropertyGraphParser,
     property_graph::{Properties, PropertyGraph},
 };
 
@@ -85,6 +90,8 @@ const SIM_PROP: &str = "similarity";
 const DISTANCE_PROP: &str = "distance";
 /// Property that stores the identifier of the transformation rule that produced an edge.
 const TRANSFO_ID_PROP: &str = "transfo_id";
+/// Property that stores the constraints of a schema on its meta-node, as a list of texts.
+const CONSTRAINTS_PROP: &str = "constraints";
 /// Property name used on `"Meta"` edges and `"Path"` edges to carry the list of
 /// applied operation strings.
 pub const OPERATIONS_PROP: &str = "operations";
@@ -274,7 +281,8 @@ fn create_property_graph_query(g: &PropertyGraph) -> String {
 ///
 /// Computes a [`DefaultHasher`] hash of the graph to use as the unique `key`.
 /// Opens a transaction, calls [`get_or_create_metanode`], and if the meta-node is
-/// new, runs the full node/edge creation query.
+/// new, runs the full node/edge creation query and stores the constraints of the graph on the
+/// meta-node.
 ///
 /// # Parameters
 /// - `g`          – the graph to persist
@@ -301,8 +309,20 @@ async fn write_property_graph(
     let (exists, distance) =
         get_or_create_metanode(key, is_output, is_source, sim, distance, &mut tx).await;
     if exists {
-        let query = query(&create_property_graph_query(g)).param("key", key);
-        tx.run(query).await.unwrap();
+        let create = query(&create_property_graph_query(g)).param("key", key);
+        tx.run(create).await.unwrap();
+        if !g.constraints.is_empty() {
+            let constraints: Vec<String> = g.constraints.iter().map(|c| c.text(g, false)).collect();
+            let set_constraints = query(&format!(
+                "MATCH (n:{meta} {{{key}:$key}}) SET n.{constraints} = $constraints;",
+                meta = META_LABEL,
+                key = KEY_PROP,
+                constraints = CONSTRAINTS_PROP
+            ))
+            .param("key", key)
+            .param("constraints", constraints);
+            tx.run(set_constraints).await.unwrap();
+        }
     }
     tx.commit().await.unwrap();
     (key, distance)
@@ -362,8 +382,9 @@ pub async fn write_graph_transformation(
 
 /// Strategy for choosing which schema(s) to fetch from Neo4j as the next input.
 ///
-/// Implementors build a Cypher query that returns rows with three columns:
+/// Implementors build a Cypher query that returns rows with four columns:
 /// - `key` (`i64`) — the hash key of the selected meta-node
+/// - `constraints` (`Vec<String>`) — the text of the constraints of the schema
 /// - `n`   (`Vec<Node>`) — all schema vertices reachable via `[:Inner]` edges
 /// - `e`   (`Vec<Relation>`) — all schema edges reachable via `[:Inner]` edges
 ///
@@ -384,10 +405,12 @@ impl SourceSelector for NaiveSource {
             "match (s:{selected})
 return
 s.{id_prop} as key,
+coalesce(s.{constraints}, []) as constraints,
 collect {{ match (s)-[:{inner}]->(n) return n }} as n,
 collect {{ match (s)-[:{inner}]->()-[e:!{inner}]->() return e }} as e;
 ",
             id_prop = KEY_PROP,
+            constraints = CONSTRAINTS_PROP,
             selected = label,
             inner = INNER_LABEL
         ))
@@ -406,12 +429,14 @@ impl SourceSelector for GreedySource {
             "match (s:{selected})
 return
 s.{id_prop} as key,
+coalesce(s.{constraints}, []) as constraints,
 collect {{ match (s)-[:{inner}]->(n) return n }} as n,
 collect {{ match (s)-[:{inner}]->()-[e:!{inner}]->() return e }} as e
 order by s.{similarity} desc
 limit {beam};
 ",
             id_prop = KEY_PROP,
+            constraints = CONSTRAINTS_PROP,
             selected = label,
             inner = INNER_LABEL,
             similarity = SIM_PROP,
@@ -440,12 +465,14 @@ with max(n.{distance}) as maxDist
 match (s:{selected})
 return
 s.{id_prop} as key,
+coalesce(s.{constraints}, []) as constraints,
 collect {{ match (s)-[:{inner}]->(n) return n }} as n,
 collect {{ match (s)-[:{inner}]->()-[e:!{inner}]->() return e }} as e
 order by {weight}*(s.{distance} / maxDist) + (1 - {weight})*(1 - s.{similarity})
 limit {beam};
 ",
             id_prop = KEY_PROP,
+            constraints = CONSTRAINTS_PROP,
             selected = label,
             inner = INNER_LABEL,
             similarity = SIM_PROP,
@@ -469,12 +496,14 @@ impl SourceSelector for RandomSource {
 with s, rand() as r
 return
 s.{id_prop} as key,
+coalesce(s.{constraints}, []) as constraints,
 collect {{ match (s)-[:{inner}]->(n) return n }} as n,
 collect {{ match (s)-[:{inner}]->()-[e:!{inner}]->() return e }} as e
 order by r
 limit {beam};
 ",
             id_prop = KEY_PROP,
+            constraints = CONSTRAINTS_PROP,
             selected = label,
             inner = INNER_LABEL,
             beam = beam
@@ -512,7 +541,7 @@ impl SourceSelectorEnum {
 /// Async implementation of [`get_source_graphs`].
 ///
 /// Executes the selector's query, then deserialises each result row back into a
-/// [`PropertyGraph`]:
+/// [`PropertyGraph`], constraints included.
 ///
 /// Returns a `Vec` of `(key, graph)` pairs.
 async fn get_source_graphs_async(
@@ -571,6 +600,14 @@ async fn get_source_graphs_async(
                 let lid = g.edge_label.add_label(label.to_string());
                 g.edge_label.add_label_mapping(&id, lid).unwrap();
             }
+        }
+        // Constraints refer to the types by name: they are bound once the schema is rebuilt.
+        let constraints: Vec<String> = row.get("constraints").unwrap();
+        for text in constraints {
+            let constraint = PropertyGraphParser
+                .parse_constraint(&text, &g)
+                .unwrap_or_else(|e| panic!("Invalid stored constraint `{}`: {}", text, e));
+            g.constraints.push(constraint);
         }
         graphs.push((row.get("key").unwrap(), g));
     }

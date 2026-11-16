@@ -1,0 +1,13 @@
+create graph type orders {
+(customerType: Customer {id int, email string}),
+(orderType: Order {id int, total float}),
+(cityType: City {name string, zip string}),
+(:customerType)-[livesIn: LIVES_IN]->(:cityType),
+(:orderType)-[placedBy: PLACED_BY]->(:customerType),
+FOR (c: customerType) IDENTIFIER c.id,
+FOR (c: customerType) IDENTIFIER c.email,
+FOR (c: cityType) IDENTIFIER c.zip,
+FOR (o: orderType) IDENTIFIER o.id,
+FOR (o: orderType) MANDATORY SINGLETON p WITHIN (o)-[p: placedBy]->(: customerType),
+FOR (c: customerType) MANDATORY l WITHIN (c)-[l: livesIn]->()
+}

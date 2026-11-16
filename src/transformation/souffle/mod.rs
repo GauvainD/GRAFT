@@ -60,6 +60,16 @@ pub struct RelationNames<'a> {
     pub edge: &'a str,
     pub edge_has_label: &'a str,
     pub edge_property: &'a str,
+    pub constraint: &'a str,
+    pub constraint_qualifier: &'a str,
+    pub constraint_key: &'a str,
+    pub pattern_node: &'a str,
+    pub pattern_edge: &'a str,
+    pub pattern_type: &'a str,
+    pub pattern_label: &'a str,
+    pub pattern_anonymous: &'a str,
+    pub condition: &'a str,
+    pub condition_term: &'a str,
 }
 
 /// Names of relations encoding the schema being transformed
@@ -72,6 +82,16 @@ pub const INPUT_RELATION_NAMES: RelationNames<'static> = RelationNames {
     edge: "Edge",
     edge_has_label: "EdgeHasLabel",
     edge_property: "EdgeProperty",
+    constraint: "Constraint",
+    constraint_qualifier: "ConstraintQualifier",
+    constraint_key: "ConstraintKey",
+    pattern_node: "PatternNode",
+    pattern_edge: "PatternEdge",
+    pattern_type: "PatternType",
+    pattern_label: "PatternLabel",
+    pattern_anonymous: "PatternAnonymous",
+    condition: "Condition",
+    condition_term: "ConditionTerm",
 };
 
 /// Names of the Souffle relations encoding the *target* schema (used for similarity-guided Datalog rules).
@@ -84,6 +104,16 @@ pub const TARGET_RELATION_NAMES: RelationNames<'static> = RelationNames {
     edge: "TargetEdge",
     edge_has_label: "TargetEdgeHasLabel",
     edge_property: "TargetEdgeProperty",
+    constraint: "TargetConstraint",
+    constraint_qualifier: "TargetConstraintQualifier",
+    constraint_key: "TargetConstraintKey",
+    pattern_node: "TargetPatternNode",
+    pattern_edge: "TargetPatternEdge",
+    pattern_type: "TargetPatternType",
+    pattern_label: "TargetPatternLabel",
+    pattern_anonymous: "TargetPatternAnonymous",
+    condition: "TargetCondition",
+    condition_term: "TargetConditionTerm",
 };
 
 /// Initializes the souffle program.
@@ -276,6 +306,98 @@ fn encode_graph(program: Program, graph: &PropertyGraph, relation_names: &Relati
             souffle_ffi::insertText(tup, &value);
         },
     );
+    encode_constraints(program, graph, relation_names);
+}
+
+/// Inserts a tuple made of the given texts.
+fn insert_texts(tup: &InputTuple, texts: &[&str]) {
+    for text in texts {
+        let_cxx_string!(ctext = text);
+        souffle_ffi::insertText(tup, &ctext);
+    }
+}
+
+/// Serializes the constraints of the given property graph. Each pattern is encoded as a small
+/// graph whose variables are typed by the vertices and edges of the schema.
+fn encode_constraints(
+    program: Program,
+    graph: &PropertyGraph,
+    relation_names: &RelationNames<'static>,
+) {
+    // Nothing to do (and no text to build) if the program does not use constraints.
+    if graph.constraints.is_empty() || !has_relation(program, relation_names.constraint) {
+        return;
+    }
+    for constraint in graph.constraints.iter() {
+        let facts = constraint.facts(graph);
+        let id = facts.id.as_str();
+        fill_relation(program, relation_names.constraint, std::iter::once(id), |tup, id| {
+            insert_texts(tup, &[id])
+        });
+        fill_relation(
+            program,
+            relation_names.constraint_qualifier,
+            facts.qualifiers.iter(),
+            |tup, q| insert_texts(tup, &[id, q]),
+        );
+        fill_relation(
+            program,
+            relation_names.constraint_key,
+            facts.keys.iter(),
+            |tup, (var, prop)| insert_texts(tup, &[id, var, prop]),
+        );
+        fill_relation(
+            program,
+            relation_names.pattern_node,
+            facts.nodes.iter(),
+            |tup, (side, var)| insert_texts(tup, &[id, side, var]),
+        );
+        fill_relation(
+            program,
+            relation_names.pattern_edge,
+            facts.edges.iter(),
+            |tup, (side, var, from, to)| insert_texts(tup, &[id, side, var, from, to]),
+        );
+        fill_relation(
+            program,
+            relation_names.pattern_type,
+            facts.types.iter(),
+            |tup, (var, name)| insert_texts(tup, &[id, var, name]),
+        );
+        fill_relation(
+            program,
+            relation_names.pattern_label,
+            facts.labels.iter(),
+            |tup, (var, label)| insert_texts(tup, &[id, var, label]),
+        );
+        fill_relation(
+            program,
+            relation_names.pattern_anonymous,
+            facts.anonymous.iter(),
+            |tup, var| insert_texts(tup, &[id, var]),
+        );
+        fill_relation(
+            program,
+            relation_names.condition,
+            facts.conditions.iter(),
+            |tup, (side, n, op)| {
+                insert_texts(tup, &[id, side]);
+                souffle_ffi::insertNumber(tup, *n);
+                insert_texts(tup, &[op]);
+            },
+        );
+        fill_relation(
+            program,
+            relation_names.condition_term,
+            facts.terms.iter(),
+            |tup, (side, n, pos, kind, var, value)| {
+                insert_texts(tup, &[id, side]);
+                souffle_ffi::insertNumber(tup, *n);
+                souffle_ffi::insertNumber(tup, *pos);
+                insert_texts(tup, &[kind, var, value]);
+            },
+        );
+    }
 }
 
 /// Serializes the input schema into a Souffle program
@@ -393,9 +515,10 @@ impl Operation {
                 args.pop_front()?,
                 args.pop_front()?,
             )),
-            OperationName::AddConstraint => Some(Operation::AddConstraint(
-                args.pop_front()?,
-            )),
+            OperationName::AddConstraint => Some(Operation::AddConstraint(args.pop_front()?)),
+            OperationName::RemoveConstraint => {
+                Some(Operation::RemoveConstraint(args.pop_front()?))
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 //! Module dedicated to GraphTransformation. These represent a schema being transformed and the
 //! result of a transformation.
-use std::{collections::{HashMap, HashSet}, fmt::Display};
+use std::{collections::HashMap, fmt::Display, sync::Arc};
 
 use log::error;
 use petgraph::{
@@ -10,7 +10,7 @@ use petgraph::{
 
 use crate::{
     constants::IDEMPOTENCE,
-    constraints::{Constraint, Type},
+    constraints::{Constraint, PoolEntry},
     property_graph::{Properties, PropertyGraph},
     transformation::Operation,
 };
@@ -36,8 +36,9 @@ pub struct GraphTransformation {
     label_node_ids: HashMap<String, u32>,
     /// Maps each edge label to its index
     label_edge_ids: HashMap<String, u32>,
-    /// Constraints based on id
-    pub constraints: HashMap<String, Constraint>,
+    /// Constraints that can be added or removed, by identifier (their canonical text when the
+    /// transformation started). Shared between all the transformations of a same schema.
+    pub constraints: Arc<HashMap<String, PoolEntry>>,
 }
 
 impl From<&PropertyGraph> for GraphTransformation {
@@ -69,12 +70,12 @@ impl From<&PropertyGraph> for GraphTransformation {
                 .labels()
                 .map(|&id| (g.edge_label.get_label(id).unwrap().clone(), id))
                 .collect(),
-            constraints: g
-                .constraints
-                .iter()
-                .enumerate()
-                .map(|(n, c)| (format!("S{}", n), c.clone()))
-                .collect(),
+            constraints: Arc::new(
+                g.constraints
+                    .iter()
+                    .map(|c| (c.text(g, true), c.to_pool_entry(g)))
+                    .collect(),
+            ),
         }
     }
 }
@@ -107,6 +108,69 @@ impl Clone for GraphTransformation {
 }
 
 impl GraphTransformation {
+    /// Makes the constraints of the target schema available to `AddConstraint`.
+    pub fn add_target_constraints(&mut self, target: &PropertyGraph) {
+        if !target.constraints.is_empty() {
+            let pool = Arc::make_mut(&mut self.constraints);
+            for c in target.constraints.iter() {
+                pool.entry(c.text(target, true))
+                    .or_insert_with(|| c.to_pool_entry(target));
+            }
+        }
+    }
+
+    /// Binds a constraint of the pool to the resulting schema. Types are first looked up by the
+    /// name they had when the transformation started, then by their current name.
+    fn bind_constraint(&self, ident: &str) -> Option<Constraint> {
+        let g = &self.result.graph;
+        self.constraints
+            .get(ident)?
+            .bind(
+                |name| {
+                    self.node_ids
+                        .get(name)
+                        .copied()
+                        .or_else(|| g.node_indices().find(|n| g[*n].name == name))
+                },
+                |name| {
+                    self.edge_ids
+                        .get(name)
+                        .copied()
+                        .or_else(|| g.edge_indices().find(|e| g[*e].name == name))
+                },
+            )
+            .ok()
+    }
+
+    /// Changes the endpoints of an edge. The edge gets a new index. Fails if a constraint does
+    /// not hold on the moved edge.
+    fn move_edge(&mut self, e: &str, source: Option<&str>, target: Option<&str>) -> Option<()> {
+        let old = *self.edge_ids.get(e)?;
+        let (mut src, mut dst) = self.result.graph.edge_endpoints(old)?;
+        if let Some(source) = source {
+            src = *self.node_ids.get(source)?;
+        }
+        if let Some(target) = target {
+            dst = *self.node_ids.get(target)?;
+        }
+        let w = self.result.graph.remove_edge(old)?;
+        let new = self.result.graph.add_edge(src, dst, w);
+        let labels: Vec<u32> = self.result.edge_label.element_labels(&old).copied().collect();
+        labels
+            .into_iter()
+            .try_for_each(|l| self.result.edge_label.add_label_mapping(&new, l).ok())?;
+        self.result.edge_label.remove_element(&old);
+        self.edge_ids.insert(e.to_string(), new);
+        let mut constraints = std::mem::take(&mut self.result.constraints);
+        let mut valid = true;
+        for c in constraints.iter_mut().filter(|c| c.uses_edge(old)) {
+            c.replace_edge(old, new);
+            valid = valid && c.validate(&self.result);
+        }
+        self.result.constraints = constraints;
+        valid.then_some(())
+    }
+
     /// Transforms the resulting schema by applying the given operation. If IDEMPOTENCE is set to
     /// true, operations that do not change the schema will be ignored. Otherwise, None will be
     /// returned.
@@ -132,6 +196,9 @@ impl GraphTransformation {
                 let vertex = self.node_ids.get(v);
                 let label = self.label_node_ids.get(l);
                 if let (Some(vertex), Some(label)) = (vertex, label) {
+                    if self.result.constraints.iter().any(|c| c.uses_node_label(*vertex, l)) {
+                        return None;
+                    }
                     let res = self
                         .result
                         .vertex_label
@@ -160,6 +227,9 @@ impl GraphTransformation {
                 let edge = self.edge_ids.get(e);
                 let label = self.label_edge_ids.get(l);
                 if let (Some(edge), Some(label)) = (edge, label) {
+                    if self.result.constraints.iter().any(|c| c.uses_edge_label(*edge, l)) {
+                        return None;
+                    }
                     let res = self
                         .result
                         .edge_label
@@ -187,6 +257,9 @@ impl GraphTransformation {
             }
             Operation::RemoveVertex(v) => {
                 if let Some(index) = self.node_ids.get(v) {
+                    if self.result.constraints.iter().any(|c| c.uses_node(*index)) {
+                        return None;
+                    }
                     self.result.vertex_label.remove_element(index);
                     self.result.graph.remove_node(*index);
                     self.node_ids.remove(v);
@@ -215,6 +288,9 @@ impl GraphTransformation {
             }
             Operation::RemoveEdge(e) => {
                 if let Some(index) = self.edge_ids.get(e) {
+                    if self.result.constraints.iter().any(|c| c.uses_edge(*index)) {
+                        return None;
+                    }
                     self.result.edge_label.remove_element(index);
                     self.result.graph.remove_edge(*index);
                     self.edge_ids.remove(e);
@@ -227,7 +303,11 @@ impl GraphTransformation {
                 prop.map.insert(name.to_string(), value.to_string());
             }
             Operation::RemoveVertexProperty(v, name) => {
-                let prop = self.result.graph.node_weight_mut(*self.node_ids.get(v)?)?;
+                let id = *self.node_ids.get(v)?;
+                if self.result.constraints.iter().any(|c| c.uses_node_prop(id, name)) {
+                    return None;
+                }
+                let prop = self.result.graph.node_weight_mut(id)?;
                 prop.map.remove(name);
             }
             Operation::AddEdgeProperty(e, name, value) => {
@@ -235,11 +315,14 @@ impl GraphTransformation {
                 prop.map.insert(name.to_string(), value.to_string());
             }
             Operation::RemoveEdgeProperty(e, name) => {
-                let prop = self.result.graph.edge_weight_mut(*self.edge_ids.get(e)?)?;
+                let id = *self.edge_ids.get(e)?;
+                if self.result.constraints.iter().any(|c| c.uses_edge_prop(id, name)) {
+                    return None;
+                }
+                let prop = self.result.graph.edge_weight_mut(id)?;
                 prop.map.remove(name);
             }
             Operation::RenameVertex(v, name) => {
-                //FIXME: constraints
                 if let Some(id) = self.node_ids.get(v) {
                     let prop = self.result.graph.node_weight_mut(*id)?;
                     prop.name.clone_from(name);
@@ -248,7 +331,6 @@ impl GraphTransformation {
                 }
             }
             Operation::RenameEdge(e, name) => {
-                //FIXME: constraints
                 if let Some(id) = self.edge_ids.get(e) {
                     let prop = self.result.graph.edge_weight_mut(*id)?;
                     prop.name.clone_from(name);
@@ -256,88 +338,174 @@ impl GraphTransformation {
                     return None;
                 }
             }
-            Operation::MoveEdgeTarget(e, t) => {
-                let edgeindex = self.edge_ids.get(e)?;
-                let src = self.result.graph.edge_endpoints(*edgeindex)?.0;
-                let target = self.node_ids.get(t)?;
-                let w = self.result.graph.remove_edge(*edgeindex)?;
-                let new_index = self.result.graph.add_edge(src, *target, w);
-                let labels: Vec<u32> = self
-                    .result
-                    .edge_label
-                    .element_labels(edgeindex)
-                    .copied()
-                    .collect();
-                labels.into_iter().try_for_each(|l| {
-                    self.result.edge_label.add_label_mapping(&new_index, l).ok()
-                })?;
-                self.result.edge_label.remove_element(edgeindex);
-                self.edge_ids.insert(e.clone(), new_index);
-            }
-            Operation::MoveEdgeSource(e, s) => {
-                let edgeindex = self.edge_ids.get(e)?;
-                let target = self.result.graph.edge_endpoints(*edgeindex)?.1;
-                let src = self.node_ids.get(s)?;
-                let w = self.result.graph.remove_edge(*edgeindex)?;
-                let new_index = self.result.graph.add_edge(*src, target, w);
-                let labels: Vec<u32> = self
-                    .result
-                    .edge_label
-                    .element_labels(edgeindex)
-                    .copied()
-                    .collect();
-                labels.into_iter().try_for_each(|l| {
-                    self.result.edge_label.add_label_mapping(&new_index, l).ok()
-                })?;
-                self.result.edge_label.remove_element(edgeindex);
-                self.edge_ids.insert(e.clone(), new_index);
-            }
+            Operation::MoveEdgeTarget(e, t) => self.move_edge(e, None, Some(t))?,
+            Operation::MoveEdgeSource(e, s) => self.move_edge(e, Some(s), None)?,
             Operation::AddConstraint(ident) => {
-                //FIXME: Check for duplicated constraints and check text
-                let constraint = self.constraints.get(ident)?;
-                let type_convert: HashMap<Type, Type> = constraint
-                    .types
-                    .iter()
-                    .map(|t| {
-                        let newtype: Option<Type> = match t {
-                            Type::Node { name, .. } => Some(Type::Node {
-                                id: *(self.node_ids.get(name)?),
-                                name: name.clone(),
-                            }),
-                            Type::Edge { name, .. } => Some(Type::Edge {
-                                id: *(self.edge_ids.get(name)?),
-                                name: name.clone(),
-                            }),
-                        };
-                        Some((t.clone(), newtype?))
-                    })
-                    .collect::<Option<HashMap<Type, Type>>>()?;
-                let newvars = constraint.vars.iter().map(|(var, t)| {
-                    Some((
-                            var.clone(),
-                            t.as_ref().and_then(|t| type_convert.get(t).cloned())
-                            ))
-                }).collect::<Option<HashMap<String, Option<Type>>>>()?;
-                let newprops = constraint.props.iter().map(|(t, p)| {
-                    Some((
-                            type_convert.get(t)?.clone(),
-                            p.clone()
-                            ))
-                }).collect::<Option<HashMap<Type, HashSet<String>>>>()?;
-                let new_types = type_convert.iter().map(|(_, x)| x.clone()).collect();
-                let new_constraint = Constraint {
-                    text: constraint.text.clone(),
-                    vars: newvars,
-                    types: new_types,
-                    props: newprops
-                };
-                if !new_constraint.validate(&(self.result)) {
+                let constraint = self.bind_constraint(ident)?;
+                if !constraint.validate(&self.result) {
                     return None;
                 }
-                self.result.constraints.push(new_constraint);
+                let result = &self.result;
+                if result.constraints.iter().any(|c| c.same_as(&constraint, result)) {
+                    if !idempotent {
+                        return None;
+                    }
+                } else {
+                    self.result.constraints.push(constraint);
+                }
+            }
+            Operation::RemoveConstraint(ident) => {
+                let result = &self.result;
+                let position = self.bind_constraint(ident).and_then(|constraint| {
+                    result
+                        .constraints
+                        .iter()
+                        .position(|c| c.same_as(&constraint, result))
+                });
+                match position {
+                    Some(position) => {
+                        self.result.constraints.swap_remove(position);
+                    }
+                    None if !idempotent => return None,
+                    None => (),
+                }
             }
         }
         self.operations.push(format!("{:?}", op));
         Some(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parsing::PropertyGraphParser;
+
+    const SOURCE: &str = "CREATE GRAPH TYPE {
+        (person: Person { id INT, name STRING }),
+        (city: City { name STRING }),
+        (:person)-[lives: LivesIn { since INT }]->(:city),
+        FOR (x: person) EXCLUSIVE MANDATORY SINGLETON x.id
+    }";
+
+    const TARGET: &str = "CREATE GRAPH TYPE {
+        (person: Person { id INT, name STRING }),
+        (city: City { name STRING }),
+        (:person)-[lives: LivesIn { since INT }]->(:city),
+        FOR (p: person) MANDATORY l.since WITHIN (p)-[l: lives]->(: city)
+    }";
+
+    fn parse(text: &str) -> PropertyGraph {
+        PropertyGraphParser.convert_text(text).remove(0)
+    }
+
+    fn transformation() -> (GraphTransformation, String, String) {
+        let _ = IDEMPOTENCE.set(false);
+        let source = parse(SOURCE);
+        let target = parse(TARGET);
+        let mut gt: GraphTransformation = (&source).into();
+        gt.add_target_constraints(&target);
+        let key = source.constraints[0].text(&source, true);
+        let ggd = target.constraints[0].text(&target, true);
+        (gt, key, ggd)
+    }
+
+    fn op1(f: fn(String) -> Operation, a: &str) -> Operation {
+        f(a.to_string())
+    }
+
+    fn op2(f: fn(String, String) -> Operation, a: &str, b: &str) -> Operation {
+        f(a.to_string(), b.to_string())
+    }
+
+    #[test]
+    fn add_and_remove_constraints() {
+        let (mut gt, key, ggd) = transformation();
+        assert_eq!(gt.constraints.len(), 2);
+        assert!(gt.apply(&Operation::AddConstraint(ggd.clone())).is_some());
+        assert_eq!(gt.result.constraints.len(), 2);
+        // Already there
+        assert!(gt.apply(&Operation::AddConstraint(ggd.clone())).is_none());
+        assert!(gt.apply(&Operation::AddConstraint(key.clone())).is_none());
+        assert!(gt.apply(&Operation::RemoveConstraint(key.clone())).is_some());
+        assert!(gt.apply(&Operation::RemoveConstraint(key.clone())).is_none());
+        assert_eq!(gt.result.constraints.len(), 1);
+        assert_eq!(gt.result.constraints[0].text(&gt.result, true), ggd);
+        assert!(gt.apply(&Operation::AddConstraint("unknown".to_string())).is_none());
+    }
+
+    #[test]
+    fn rename_keeps_constraints() {
+        let (mut gt, key, ggd) = transformation();
+        assert!(gt.apply(&op2(Operation::RenameVertex, "person", "human")).is_some());
+        assert_eq!(
+            gt.result.constraints[0].text(&gt.result, false),
+            "FOR (x:human) EXCLUSIVE MANDATORY SINGLETON x.id"
+        );
+        assert!(gt.result.constraints[0].validate(&gt.result));
+        // Identifiers are those of the schema before the transformation
+        assert!(gt.apply(&Operation::AddConstraint(ggd)).is_some());
+        assert!(gt.apply(&Operation::RemoveConstraint(key)).is_some());
+        assert_eq!(
+            gt.result.constraints[0].text(&gt.result, false),
+            "FOR (p:human) MANDATORY l.since WITHIN (p)-[l:lives]->(:city)"
+        );
+    }
+
+    #[test]
+    fn used_elements_cannot_be_removed() {
+        let (mut gt, key, ggd) = transformation();
+        assert!(gt.apply(&Operation::AddConstraint(ggd.clone())).is_some());
+        assert!(gt.clone().apply(&op1(Operation::RemoveVertex, "person")).is_none());
+        assert!(gt.clone().apply(&op1(Operation::RemoveEdge, "lives")).is_none());
+        assert!(gt.clone().apply(&op2(Operation::RemoveVertexProperty, "person", "id")).is_none());
+        assert!(gt.clone().apply(&op2(Operation::RemoveEdgeProperty, "lives", "since")).is_none());
+        // Not used by any constraint
+        assert!(gt.apply(&op2(Operation::RemoveVertexProperty, "person", "name")).is_some());
+        // Once the constraints are removed, everything can go
+        assert!(gt.apply(&Operation::RemoveConstraint(ggd)).is_some());
+        assert!(gt.apply(&op2(Operation::RemoveEdgeProperty, "lives", "since")).is_some());
+        assert!(gt.apply(&op1(Operation::RemoveEdge, "lives")).is_some());
+        assert!(gt.apply(&Operation::RemoveConstraint(key)).is_some());
+        assert!(gt.apply(&op1(Operation::RemoveVertex, "person")).is_some());
+    }
+
+    #[test]
+    fn moving_an_edge_keeps_or_rejects_constraints() {
+        let (mut gt, _, ggd) = transformation();
+        assert!(gt.apply(&Operation::AddConstraint(ggd)).is_some());
+        // The pattern needs the edge to start from person and to end in city
+        assert!(gt.clone().apply(&op2(Operation::MoveEdgeSource, "lives", "city")).is_none());
+        assert!(gt.clone().apply(&op2(Operation::MoveEdgeTarget, "lives", "person")).is_none());
+        // Moving to the same endpoint changes the index of the edge only
+        assert!(gt.apply(&op2(Operation::MoveEdgeTarget, "lives", "city")).is_some());
+        assert!(gt.result.constraints.iter().all(|c| c.validate(&gt.result)));
+    }
+
+    #[test]
+    fn constraint_needs_its_types() {
+        let (mut gt, key, ggd) = transformation();
+        assert!(gt.apply(&Operation::RemoveConstraint(key)).is_some());
+        assert!(gt.apply(&op2(Operation::RemoveEdgeProperty, "lives", "since")).is_some());
+        assert!(gt.clone().apply(&Operation::AddConstraint(ggd.clone())).is_none());
+        assert!(gt.apply(&Operation::AddEdgeProperty("lives".into(), "since".into(), "INT".into())).is_some());
+        assert!(gt.apply(&Operation::AddConstraint(ggd)).is_some());
+    }
+
+    #[test]
+    fn constraints_change_hash_and_similarity() {
+        use std::hash::{DefaultHasher, Hash, Hasher};
+        let hash = |g: &PropertyGraph| {
+            let mut h = DefaultHasher::new();
+            g.hash(&mut h);
+            h.finish()
+        };
+        let (mut gt, _, ggd) = transformation();
+        let target = parse(TARGET);
+        let before = crate::similarity::jaccard_index(&gt.result, &target);
+        let hash_before = hash(&gt.result);
+        assert!(gt.apply(&Operation::AddConstraint(ggd)).is_some());
+        assert_ne!(hash_before, hash(&gt.result));
+        assert!(crate::similarity::jaccard_index(&gt.result, &target) > before);
     }
 }

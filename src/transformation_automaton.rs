@@ -349,12 +349,9 @@ impl TransformGeneratorGraph {
         }
         let starts = automaton.start.clone().into();
         let mut gt: GraphTransformation = g.into();
-        gt.constraints.extend(t.iter().flat_map(|v| {
-            v.constraints
-                .iter()
-                .enumerate()
-                .map(|(n, v)| (format!("T{}", n), v.clone()))
-        }));
+        if let Some(target) = t {
+            gt.add_target_constraints(target);
+        }
         TransformGeneratorGraph {
             automaton,
             starts,

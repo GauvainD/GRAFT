@@ -82,6 +82,170 @@
 .output TargetEdgeHasLabel
 
 
+// Constraints of the source schema
+//
+// A constraint is written
+//   FOR <matches> [WHERE <conditions>] <qualifiers> [<keys>] [WITHIN <matches>] [WHERE <conditions>]
+// Its identifier c is its canonical text, so the same constraint has the same identifier in the
+// source and in the target schema. Each pattern is encoded as a small graph:
+//   Constraint(c)                         the constraint exists in the schema
+//   ConstraintQualifier(c, q)             q is "EXCLUSIVE", "MANDATORY" or "SINGLETON"
+//   ConstraintKey(c, var, property)       element of the key, property is "" for the element itself
+//   PatternNode(c, side, var)             var is a node of the "FOR" or "WITHIN" pattern
+//   PatternEdge(c, side, var, from, to)   var is an edge of the pattern, from node from to node to
+//   PatternType(c, var, type)             var must be of the given vertex or edge type
+//   PatternLabel(c, var, label)           var must have the given label
+//   PatternAnonymous(c, var)              var was not named (existential)
+//   Condition(c, side, n, op)             n-th comparison of the side, e.g. "=", "<=", "DIST<="
+//   ConditionTerm(c, side, n, pos, kind, var, value)
+//                                          operand of the comparison: kind "var" (var), "prop"
+//                                          (var.value) or "const" (value). DIST takes two operands.
+
+.decl Constraint(c: symbol)
+.input Constraint
+
+.decl ConstraintQualifier(c: symbol, qualifier: symbol)
+.input ConstraintQualifier
+
+.decl ConstraintKey(c: symbol, var: symbol, property: symbol)
+.input ConstraintKey
+
+.decl PatternNode(c: symbol, side: symbol, var: symbol)
+.input PatternNode
+
+.decl PatternEdge(c: symbol, side: symbol, var: symbol, from: symbol, to: symbol)
+.input PatternEdge
+
+.decl PatternType(c: symbol, var: symbol, type: symbol)
+.input PatternType
+
+.decl PatternLabel(c: symbol, var: symbol, label: symbol)
+.input PatternLabel
+
+.decl PatternAnonymous(c: symbol, var: symbol)
+.input PatternAnonymous
+
+.decl Condition(c: symbol, side: symbol, n: unsigned, op: symbol)
+.input Condition
+
+.decl ConditionTerm(c: symbol, side: symbol, n: unsigned, pos: unsigned, kind: symbol, var: symbol, value: symbol)
+.input ConditionTerm
+
+// Types, properties and labels used by a constraint
+
+.decl ConstraintVarProperty(c: symbol, var: symbol, property: symbol)
+ConstraintVarProperty(c, x, p) :- ConstraintKey(c, x, p), p != "".
+ConstraintVarProperty(c, x, p) :- ConditionTerm(c, _, _, _, "prop", x, p).
+
+.decl ConstraintUsesVertex(c: symbol, vertex: symbol)
+ConstraintUsesVertex(c, v) :- PatternNode(c, _, x), PatternType(c, x, v).
+
+.decl ConstraintUsesEdge(c: symbol, edge: symbol)
+ConstraintUsesEdge(c, e) :- PatternEdge(c, _, x, _, _), PatternType(c, x, e).
+
+.decl ConstraintUsesVertexProperty(c: symbol, vertex: symbol, property: symbol)
+ConstraintUsesVertexProperty(c, v, p) :-
+    ConstraintVarProperty(c, x, p), PatternNode(c, _, x), PatternType(c, x, v).
+
+.decl ConstraintUsesEdgeProperty(c: symbol, edge: symbol, property: symbol)
+ConstraintUsesEdgeProperty(c, e, p) :-
+    ConstraintVarProperty(c, x, p), PatternEdge(c, _, x, _, _), PatternType(c, x, e).
+
+.decl ConstraintUsesVertexLabel(c: symbol, vertex: symbol, label: symbol)
+ConstraintUsesVertexLabel(c, v, l) :-
+    PatternLabel(c, x, l), PatternNode(c, _, x), PatternType(c, x, v).
+
+.decl ConstraintUsesEdgeLabel(c: symbol, edge: symbol, label: symbol)
+ConstraintUsesEdgeLabel(c, e, l) :-
+    PatternLabel(c, x, l), PatternEdge(c, _, x, _, _), PatternType(c, x, e).
+
+// Constraints of the target schema
+//
+// A constraint is written
+//   FOR <matches> [WHERE <conditions>] <qualifiers> [<keys>] [WITHIN <matches>] [WHERE <conditions>]
+// Its identifier c is its canonical text, so the same constraint has the same identifier in the
+// source and in the target schema. Each pattern is encoded as a small graph:
+//   TargetConstraint(c)                         the constraint exists in the schema
+//   TargetConstraintQualifier(c, q)             q is "EXCLUSIVE", "MANDATORY" or "SINGLETON"
+//   TargetConstraintKey(c, var, property)       element of the key, property is "" for the element itself
+//   TargetPatternNode(c, side, var)             var is a node of the "FOR" or "WITHIN" pattern
+//   TargetPatternEdge(c, side, var, from, to)   var is an edge of the pattern, from node from to node to
+//   TargetPatternType(c, var, type)             var must be of the given vertex or edge type
+//   TargetPatternLabel(c, var, label)           var must have the given label
+//   TargetPatternAnonymous(c, var)              var was not named (existential)
+//   TargetCondition(c, side, n, op)             n-th comparison of the side, e.g. "=", "<=", "DIST<="
+//   TargetConditionTerm(c, side, n, pos, kind, var, value)
+//                                          operand of the comparison: kind "var" (var), "prop"
+//                                          (var.value) or "const" (value). DIST takes two operands.
+
+.decl TargetConstraint(c: symbol)
+.input TargetConstraint
+
+.decl TargetConstraintQualifier(c: symbol, qualifier: symbol)
+.input TargetConstraintQualifier
+
+.decl TargetConstraintKey(c: symbol, var: symbol, property: symbol)
+.input TargetConstraintKey
+
+.decl TargetPatternNode(c: symbol, side: symbol, var: symbol)
+.input TargetPatternNode
+
+.decl TargetPatternEdge(c: symbol, side: symbol, var: symbol, from: symbol, to: symbol)
+.input TargetPatternEdge
+
+.decl TargetPatternType(c: symbol, var: symbol, type: symbol)
+.input TargetPatternType
+
+.decl TargetPatternLabel(c: symbol, var: symbol, label: symbol)
+.input TargetPatternLabel
+
+.decl TargetPatternAnonymous(c: symbol, var: symbol)
+.input TargetPatternAnonymous
+
+.decl TargetCondition(c: symbol, side: symbol, n: unsigned, op: symbol)
+.input TargetCondition
+
+.decl TargetConditionTerm(c: symbol, side: symbol, n: unsigned, pos: unsigned, kind: symbol, var: symbol, value: symbol)
+.input TargetConditionTerm
+
+// Types, properties and labels used by a constraint
+
+.decl TargetConstraintVarProperty(c: symbol, var: symbol, property: symbol)
+TargetConstraintVarProperty(c, x, p) :- TargetConstraintKey(c, x, p), p != "".
+TargetConstraintVarProperty(c, x, p) :- TargetConditionTerm(c, _, _, _, "prop", x, p).
+
+.decl TargetConstraintUsesVertex(c: symbol, vertex: symbol)
+TargetConstraintUsesVertex(c, v) :- TargetPatternNode(c, _, x), TargetPatternType(c, x, v).
+
+.decl TargetConstraintUsesEdge(c: symbol, edge: symbol)
+TargetConstraintUsesEdge(c, e) :- TargetPatternEdge(c, _, x, _, _), TargetPatternType(c, x, e).
+
+.decl TargetConstraintUsesVertexProperty(c: symbol, vertex: symbol, property: symbol)
+TargetConstraintUsesVertexProperty(c, v, p) :-
+    TargetConstraintVarProperty(c, x, p), TargetPatternNode(c, _, x), TargetPatternType(c, x, v).
+
+.decl TargetConstraintUsesEdgeProperty(c: symbol, edge: symbol, property: symbol)
+TargetConstraintUsesEdgeProperty(c, e, p) :-
+    TargetConstraintVarProperty(c, x, p), TargetPatternEdge(c, _, x, _, _), TargetPatternType(c, x, e).
+
+.decl TargetConstraintUsesVertexLabel(c: symbol, vertex: symbol, label: symbol)
+TargetConstraintUsesVertexLabel(c, v, l) :-
+    TargetPatternLabel(c, x, l), TargetPatternNode(c, _, x), TargetPatternType(c, x, v).
+
+.decl TargetConstraintUsesEdgeLabel(c: symbol, edge: symbol, label: symbol)
+TargetConstraintUsesEdgeLabel(c, e, l) :-
+    TargetPatternLabel(c, x, l), TargetPatternEdge(c, _, x, _, _), TargetPatternType(c, x, e).
+
+// A target constraint cannot be added while the schema lacks something it uses.
+
+.decl TargetConstraintBlocked(c: symbol)
+TargetConstraintBlocked(c) :- TargetConstraintUsesVertex(c, v), !Vertex(v).
+TargetConstraintBlocked(c) :- TargetConstraintUsesEdge(c, e), !Edge(e, _, _).
+TargetConstraintBlocked(c) :- TargetConstraintUsesVertexProperty(c, v, p), !VertexProperty(v, p, _).
+TargetConstraintBlocked(c) :- TargetConstraintUsesEdgeProperty(c, e, p), !EdgeProperty(e, p, _).
+TargetConstraintBlocked(c) :- TargetConstraintUsesVertexLabel(c, v, l), !VertexHasLabel(v, l).
+TargetConstraintBlocked(c) :- TargetConstraintUsesEdgeLabel(c, e, l), !EdgeHasLabel(e, l).
+
 // Transformations
 
 .decl Transformation(name:symbol)
@@ -112,6 +276,8 @@
                 | RenameEdge{edge: symbol, name: symbol}
                 | MoveEdgeTarget{edge: symbol, target: symbol}
                 | MoveEdgeSource{edge: symbol, source: symbol}
+                | AddConstraint{constraint: symbol}
+                | RemoveConstraint{constraint: symbol}
 
 .decl ConcreteOperation(op: Operation)
 .input ConcreteOperation

@@ -19,6 +19,7 @@ const W_PROP: f64 = 2.0;
 const W_ADJ: f64 = 1.0;
 const W_PAIR: f64 = 1.0;
 const W_INNER: f64 = 0.25;
+const W_CONSTRAINT: f64 = 4.0;
 
 /// Extracts features from a node. One feature per node type/name, property and label.
 pub fn node_base_features(g: &PropertyGraph, n: &NodeIndex) -> Vec<Feature> {
@@ -84,7 +85,7 @@ pub fn adj_features(from_features: &[Feature], to_features: &[Feature], edge_fea
 }
 
 /// Extracts features from a property graph that include information about adjacency as well as
-/// data. Each feature carries the weight assigned by its constructor.
+/// data. Each constraint is one feature (its canonical text). Each feature carries the weight assigned by its constructor.
 pub fn property_graph_features(g: &PropertyGraph) -> Vec<Feature> {
     let node_features: HashMap<NodeIndex, Vec<Feature>> = g.graph.node_indices().map(|id| (id, node_base_features(g, &id))).collect();
     g.graph.node_indices().flat_map(|id| inner_features(node_features.get(&id).unwrap()).into_iter())
@@ -95,6 +96,7 @@ pub fn property_graph_features(g: &PropertyGraph) -> Vec<Feature> {
             let tf = node_features.get(&to).unwrap();
             inner_features(&ef).into_iter().chain(adj_features(ff, tf, &ef))
         }))
+        .chain(g.constraints.iter().map(|c| (W_CONSTRAINT, format!("constraint:{}", c.text(g, true)))))
         .collect()
 }
 

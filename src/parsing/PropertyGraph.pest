@@ -2,8 +2,9 @@ schemas = {SOI ~ createGraphType ~ (createGraphType)* ~ EOI}
 createGraphType = {^"CREATE GRAPH TYPE" ~ graphType}
 graphType = {typeName? ~ graphTypeElements}
 graphTypeElements = {"{" ~ elements? ~ ","? ~ "}"}
-elements = {element ~ ("," ~ element)*}
-element = {nodeType | edgeType | constraint}
+// Types must be declared before constraints: a node match of a constraint looks like a node type.
+elements = { element ~ ("," ~ element)* ~ ("," ~ constraint)* | constraint ~ ("," ~ constraint)* }
+element = {nodeType | edgeType}
 nodeType = {"(" ~ typeName ~ labelPropertySpec ~ ")"}
 edgeType = {endpointType ~ "-" ~ middleType ~ "-" ~ ">" ~ endpointType}
 middleType = {"[" ~ typeName ~ labelPropertySpec ~ "]"}
@@ -23,18 +24,31 @@ key = @{literal}
 propertyType = @{literal}
 literal = _{ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")*}
 and = { "&" }
-constraint = { ^"FOR" ~ constraintMatch ~ constraintType+ ~ constraintElem ~ constraintWithin? ~ constraintWhere? }
-constraintMatch = { nodeMatch | edgeMatch }
-constraintType = { "EXCLUSIVE" | "MANDATORY" | "SINGLETON" }
-constraintProp = { constraintVar ~ "." ~ key }
+// FOR <matches> [WHERE ..] <qualifiers> [<keys>] [WITHIN <matches>] [WHERE ..]
+constraint = { ^"FOR" ~ constraintSide ~ constraintType+ ~ keyList? ~ (constraintWithin | constraintWhere)? }
+// A constraint alone, as stored in Neo4j
+singleConstraint = { SOI ~ constraint ~ EOI }
+constraintSide = { matches ~ constraintWhere? }
+constraintWithin = { ^"WITHIN" ~ constraintSide }
+constraintWhere = { ^"WHERE" ~ conditions }
+constraintType = { "EXCLUSIVE" | "MANDATORY" | "SINGLETON" | "IDENTIFIER" }
+// A pattern is a conjunction of node and edge matches sharing variables
+matches = { constraintMatch ~ ("," ~ constraintMatch)* }
+constraintMatch = { edgeMatch | nodeMatch }
+nodeMatch = { "(" ~ elemSpec? ~ ")" }
+edgeMatch = { nodeMatch ~ "-" ~ "[" ~ elemSpec? ~ "]" ~ "-" ~ ">" ~ nodeMatch }
+elemSpec = { constraintVar ~ elemType? | elemType }
+elemType = { ":" ~ typeName ~ (and ~ labelSpecSet)? }
+keyList = { constraintElem ~ ("," ~ constraintElem)* }
 constraintElem = { constraintProp | constraintVar }
-nodeMatch = { "(" ~ constraintVar ~ ":" ~ typeName ~")"}
-edgeTypeMatch = { constraintVar ~ (":" ~ typeName ~ ( and ~ labelSpecSet )? )? }
-edgeNodeMatch = {"(" ~ ( edgeTypeMatch )? ~ ")"}
-edgeMatch = { edgeNodeMatch ~ "-" ~ "[" ~ edgeTypeMatch ~ "]" ~ "-" ~ ">" ~ edgeNodeMatch}
-constraintWithin = { ^"WITHIN" ~ (nodeMatch | edgeMatch) }
-constraintWhere = { ^"WHERE" ~ (constraintElem | constraintConstant ) ~ constraintOperator ~ (constraintElem | constraintConstant)}
-constraintConstant = {ASCII_DIGIT+}
-constraintOperator = { "=" | "<" | ">" }
-constraintVar = @{literal}
+constraintProp = { constraintVar ~ "." ~ key }
+conditions = { condition ~ (^"AND" ~ condition)* }
+condition = { term ~ constraintOperator ~ term }
+term = { dist | operand }
+dist = { ^"DIST" ~ "(" ~ operand ~ "," ~ operand ~ ")" }
+operand = { constraintConstant | constraintProp | constraintVar }
+constraintConstant = @{ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? | "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+constraintOperator = { "<=" | ">=" | "<>" | "=" | "<" | ">" }
+constraintKeyword = _{ ^"FOR" | ^"WITHIN" | ^"WHERE" | ^"AND" | ^"DIST" | "EXCLUSIVE" | "MANDATORY" | "SINGLETON" | "IDENTIFIER" }
+constraintVar = @{ !(constraintKeyword ~ !(ASCII_ALPHANUMERIC | "_")) ~ literal }
 WHITESPACE = _{" "|NEWLINE}

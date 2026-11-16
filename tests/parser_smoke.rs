@@ -27,11 +27,41 @@ CREATE GRAPH TYPE socialGraphType {
 #[test]
 fn parses_constraints() {
     let graphs = PropertyGraphParser.convert_text(CONSTRAINTS);
-    println!("{}", graphs[0]);
-    for c in graphs[0].constraints.iter() {
-        println!("{}", c.validate(&graphs[0]));
-    }
-    assert!(false);
+    let g = &graphs[0];
+    assert_eq!(g.constraints.len(), 3);
+    assert!(g.constraints.iter().all(|c| c.validate(g)));
+    let texts: Vec<String> = g.constraints.iter().map(|c| c.text(g, false)).collect();
+    assert_eq!(
+        texts,
+        [
+            "FOR (x:personType) EXCLUSIVE MANDATORY SINGLETON x.id",
+            "FOR (x:customerType) MANDATORY y.id WITHIN (y:personType) WHERE y.id = x.id",
+            "FOR (x:personType) SINGLETON y WITHIN (x)-[y:friendType&Bestie]->()",
+        ]
+    );
+}
+
+#[test]
+fn parses_conjunction_of_matches() {
+    let input = "CREATE GRAPH TYPE {
+        (personType: Person { name STRING, city STRING }),
+        (cityType: City { name STRING }),
+        (:personType)-[friendType: Knows]->(:personType),
+        (:personType)-[livesType: LivesIn]->(:cityType),
+        FOR (x: personType), (x)-[f: friendType]->(y: personType) WHERE DIST(x.city, y.city) <= 2
+        MANDATORY c WITHIN (x)-[: livesType]->(c: cityType), (y)-[: livesType]->(c)
+        WHERE c.name = x.city,
+        FOR (x: personType) EXCLUSIVE x.name, x.city
+    }";
+    let g = &PropertyGraphParser.convert_text(input)[0];
+    assert_eq!(g.constraints.len(), 2);
+    assert!(g.constraints.iter().all(|c| c.validate(g)));
+    let def = &g.constraints[0].def;
+    assert_eq!(def.lhs.atoms.len(), 2);
+    assert_eq!(def.rhs.atoms.len(), 2);
+    assert_eq!(def.lhs.conditions.len(), 1);
+    assert_eq!(def.rhs.conditions.len(), 1);
+    assert_eq!(g.constraints[1].def.keys.len(), 2);
 }
 
 #[test]

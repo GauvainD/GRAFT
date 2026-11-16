@@ -1,0 +1,9 @@
+create graph type orders {
+(customerType: Customer {id int, email string, city string, zip string}),
+(orderType: Order {id int, customer int, total float}),
+FOR (c: customerType) IDENTIFIER c.id,
+FOR (c: customerType) EXCLUSIVE c.email,
+FOR (c: customerType) MANDATORY c.zip,
+FOR (o: orderType) IDENTIFIER o.id,
+FOR (o: orderType) MANDATORY c.id WITHIN (c: customerType) WHERE c.id = o.customer
+}
