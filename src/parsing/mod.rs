@@ -151,10 +151,10 @@ impl PropertyGraphParser {
                     continue;
                 }
                 Rule::constraintType => {
-                    match part.as_str() {
-                        "EXCLUSIVE" => exclusive = true,
-                        "MANDATORY" => mandatory = true,
-                        "SINGLETON" => singleton = true,
+                    match part.as_str().to_lowercase().as_str() {
+                        "exclusive" => exclusive = true,
+                        "mandatory" => mandatory = true,
+                        "singleton" => singleton = true,
                         _ => (exclusive, mandatory, singleton) = (true, true, true),
                     }
                     continue;

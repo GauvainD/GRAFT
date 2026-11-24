@@ -31,7 +31,7 @@ singleConstraint = { SOI ~ constraint ~ EOI }
 constraintSide = { matches ~ constraintWhere? }
 constraintWithin = { ^"WITHIN" ~ constraintSide }
 constraintWhere = { ^"WHERE" ~ conditions }
-constraintType = { "EXCLUSIVE" | "MANDATORY" | "SINGLETON" | "IDENTIFIER" }
+constraintType = { ^"EXCLUSIVE" | ^"MANDATORY" | ^"SINGLETON" | ^"IDENTIFIER" }
 // A pattern is a conjunction of node and edge matches sharing variables
 matches = { constraintMatch ~ ("," ~ constraintMatch)* }
 constraintMatch = { edgeMatch | nodeMatch }
@@ -49,6 +49,6 @@ dist = { ^"DIST" ~ "(" ~ operand ~ "," ~ operand ~ ")" }
 operand = { constraintConstant | constraintProp | constraintVar }
 constraintConstant = @{ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? | "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
 constraintOperator = { "<=" | ">=" | "<>" | "=" | "<" | ">" }
-constraintKeyword = _{ ^"FOR" | ^"WITHIN" | ^"WHERE" | ^"AND" | ^"DIST" | "EXCLUSIVE" | "MANDATORY" | "SINGLETON" | "IDENTIFIER" }
+constraintKeyword = _{ ^"FOR" | ^"WITHIN" | ^"WHERE" | ^"AND" | ^"DIST" | ^"EXCLUSIVE" | ^"MANDATORY" | ^"SINGLETON" | ^"IDENTIFIER" }
 constraintVar = @{ !(constraintKeyword ~ !(ASCII_ALPHANUMERIC | "_")) ~ literal }
 WHITESPACE = _{" "|NEWLINE}

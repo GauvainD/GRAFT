@@ -1,0 +1,13 @@
+create graph type northwind {
+  (productType: Product {productID number, productName string, supplierID number, categoryID number, quantityPerUnit number, unitPrice number, unitsInStock number, unitsOnOrder number, reorderLevel number, discontinued boolean}),
+  (categoryType: Category {categoryID number, categoryName string, description string, picture binary}),
+  (supplierType: Supplier {supplierID number, companyName string, contactName string, contactTitle string, address string, city string, region string, postalCode number, country string, phone string, fax string, homePage string}),
+  (orderType: Order {orderID number, customerID number, employeeID number, orderDate string, requiredDate string, shippedDate string, shipVia string, freight string, shipName string, shipAddress string, shipCity string, shipRegion string, shipPostalCode number, shipCountry string}),
+  (orderDetailType: OrderDetail {orderID number, productID number, unitPrice number, quantity number, discount number}),
+  (customerType: Customer {customerID number, companyName string, contactName string, contactTitle string, address string, city string, region string, postalCode number, country string, phone string, fax string}),
+  for (p: productType) exclusive p.productID,
+  for (p: supplierType) exclusive p.supplierID,
+  for (p: categoryType) exclusive p.categoryID,
+  for (p: customerType) exclusive p.customerID,
+  for (p: orderType) exclusive p.orderID,
+}
